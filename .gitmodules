@@ -1,0 +1,3 @@
+[submodule "sim86"]
+	path = sim86
+	url = https://github.com/XantreDev/sim86.git
