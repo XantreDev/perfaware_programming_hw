@@ -1,3 +1,5 @@
+use std::io::Write;
+
 use rand::Rng;
 
 trait Squarable {
@@ -115,7 +117,7 @@ fn save_data(data: HaversineData, out_file_name: &str) {
     let mut json_file = File::create(format!("{}.json", out_file_name)).expect("can open file");
     writeln!(json_file, "{{\"pairs\": [").unwrap();
 
-    let last_idx = data.pairs.len();
+    let last_idx = data.pairs.len() - 1;
     for (idx, pair) in data.pairs.iter().enumerate() {
         write!(
             json_file,
