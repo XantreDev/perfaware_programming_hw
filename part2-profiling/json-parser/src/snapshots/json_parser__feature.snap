@@ -1,0 +1,51 @@
+---
+source: src/main.rs
+expression: "parse_json(\"{\n            \\\"ability\\\": [1, null, false, 2.0, \\\"55\\\", { \\\"obj\\\": 213 }],\n            \\\"key\\\": { \\\"value\\\": 220 }\n        }\".to_string()).unwrap()"
+---
+Object(
+    [
+        KeyValuePair(
+            "ability",
+            Array(
+                [
+                    Number(
+                        1.0,
+                    ),
+                    Null,
+                    Bool(
+                        false,
+                    ),
+                    Number(
+                        2.0,
+                    ),
+                    String(
+                        "55",
+                    ),
+                    Object(
+                        [
+                            KeyValuePair(
+                                "obj",
+                                Number(
+                                    213.0,
+                                ),
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ),
+        KeyValuePair(
+            "key",
+            Object(
+                [
+                    KeyValuePair(
+                        "value",
+                        Number(
+                            220.0,
+                        ),
+                    ),
+                ],
+            ),
+        ),
+    ],
+)

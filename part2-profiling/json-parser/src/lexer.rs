@@ -3,13 +3,7 @@ use std::{
     iter::{Enumerate, Peekable},
 };
 
-#[derive(Debug)]
-pub struct Atom {
-    start: u32,
-    end: u32,
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Token {
     BraceOpen,
     BraceClose,
@@ -30,7 +24,7 @@ fn is_whitespace(value: char) -> bool {
 #[derive(Debug)]
 pub struct TokenStream {
     data: String,
-    tokens: Vec<Token>,
+    pub tokens: Vec<Token>,
 }
 
 fn skip_n<T: Iterator>(value: &mut T, elements: u32) {
@@ -39,7 +33,23 @@ fn skip_n<T: Iterator>(value: &mut T, elements: u32) {
     }
 }
 
-pub fn lexicize(data: String) -> TokenStream {
+#[derive(Debug, Clone)]
+pub(crate) struct UnknownTokenError {
+    pub(crate) message: String,
+}
+
+impl UnknownTokenError {
+    fn new(message: &str) -> UnknownTokenError {
+        UnknownTokenError {
+            message: message.to_string(),
+        }
+    }
+    fn from_string(message: String) -> UnknownTokenError {
+        UnknownTokenError { message: message }
+    }
+}
+
+pub fn lexicize(data: String) -> Result<TokenStream, UnknownTokenError> {
     let mut chars = data.chars().enumerate().peekable();
     let mut tokens = Vec::new();
 
@@ -47,7 +57,7 @@ pub fn lexicize(data: String) -> TokenStream {
         loop {
             let Some((_, char)) = chars.peek() else {
                 drop(chars);
-                return TokenStream { data, tokens };
+                return Ok(TokenStream { data, tokens });
             };
             if is_whitespace(char.to_owned()) {
                 chars.next();
@@ -56,33 +66,38 @@ pub fn lexicize(data: String) -> TokenStream {
             }
         }
 
-        let Some((idx, char)) = chars.next() else {
+        let Some((_, char)) = chars.next() else {
             drop(chars);
-            return TokenStream { data, tokens };
+            return Ok(TokenStream { data, tokens });
         };
 
         let token = match char {
             '{' => Token::BraceOpen,
             ':' => Token::Colon,
-            ('}') => Token::BraceClose,
-            ('[') => Token::BracketOpen,
-            (']') => Token::BracketClose,
-            ('n') => {
+            '}' => Token::BraceClose,
+            '[' => Token::BracketOpen,
+            ']' => Token::BracketClose,
+            'n' => {
                 skip_n(&mut chars, 3);
                 Token::Null
             }
-            (',') => Token::Comma,
-            ('t') => {
+            ',' => Token::Comma,
+            't' => {
                 skip_n(&mut chars, 3);
                 Token::Bool(true)
             }
-            ('f') => {
+            'f' => {
                 skip_n(&mut chars, 4);
                 Token::Bool(false)
             }
-            '"' => Token::String(parse_string(&mut chars)),
+            '"' => Token::String(parse_string(&mut chars)?),
             _ if is_digit_char(&char) => Token::Number(parse_number_string(&char, &mut chars)),
-            _ => panic!("invariant char {}", char),
+            _ => {
+                return Err(UnknownTokenError::from_string(format!(
+                    "invariant char {}",
+                    char
+                )));
+            }
         };
 
         tokens.push(token);
@@ -115,21 +130,23 @@ fn parse_number_string<T: Iterator<Item = char>>(
     }
 }
 
-fn parse_string<T: Iterator<Item = char>>(iter: &mut Peekable<Enumerate<T>>) -> String {
+fn parse_string<T: Iterator<Item = char>>(
+    iter: &mut Peekable<Enumerate<T>>,
+) -> Result<String, UnknownTokenError> {
     let mut str = String::new();
     loop {
         let Some((_, char)) = iter.next() else {
-            panic!("unexpected end of json");
+            return Err(UnknownTokenError::new("unexpected end of json"));
         };
 
         if char == '"' {
-            return str;
+            return Ok(str);
         }
 
         // escaping
         if char == '\\' {
             let Some((_, next_char)) = iter.next() else {
-                panic!("unexpected end by escape character");
+                return Err(UnknownTokenError::new("unexpected end by escape character"));
             };
 
             str.push(next_char);
@@ -142,13 +159,16 @@ fn parse_string<T: Iterator<Item = char>>(iter: &mut Peekable<Enumerate<T>>) -> 
 
 #[test]
 fn check_basic_lexing() {
-    insta::assert_debug_snapshot!(lexicize("{ \"about\": 10 }".to_string()));
-    insta::assert_debug_snapshot!(lexicize("123.4".to_string()));
-    insta::assert_debug_snapshot!(lexicize(
-        "{
+    insta::assert_debug_snapshot!(lexicize("{ \"about\": 10 }".to_string()).unwrap());
+    insta::assert_debug_snapshot!(lexicize("123.4".to_string()).unwrap());
+    insta::assert_debug_snapshot!(
+        lexicize(
+            "{
             \"ability\": [1, null, false, 2.0, \"55\", { \"obj\": 213 }],
             \"key\": { \"value\": 220 }
         }"
-        .to_string()
-    ));
+            .to_string()
+        )
+        .unwrap()
+    );
 }
