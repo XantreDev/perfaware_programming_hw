@@ -90,7 +90,9 @@ pub fn lexicize(data: String) -> Result<TokenStream, UnknownTokenError> {
                 Token::Bool(false)
             }
             '"' => Token::String(parse_string(&mut chars)?),
-            _ if is_digit_char(&char) => Token::Number(parse_number_string(&char, &mut chars)),
+            _ if is_digit_char(&char) || char == '-' => {
+                Token::Number(parse_number_string(&char, &mut chars))
+            }
             _ => {
                 return Err(UnknownTokenError::from_string(format!(
                     "invariant char {}",

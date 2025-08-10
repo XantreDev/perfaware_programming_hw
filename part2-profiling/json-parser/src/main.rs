@@ -1,3 +1,5 @@
+use std::{fs::File, io::Read};
+
 use crate::{
     ast::{Ast, build_ast},
     lexer::lexicize,
@@ -28,12 +30,8 @@ pub fn parse_json(json: String) -> Result<Ast, ParseError> {
     Ok(ast)
 }
 
-fn main() {
-    println!("Hello, world!");
-}
-
 #[test]
-fn feature() {
+fn parses() {
     insta::assert_debug_snapshot!(
         parse_json(
             "{
@@ -44,4 +42,13 @@ fn feature() {
         )
         .unwrap()
     );
+}
+
+#[test]
+fn parses_big_json() {
+    let mut file = File::open("test.json").unwrap();
+    let mut json = String::new();
+    file.read_to_string(&mut json).unwrap();
+
+    parse_json(json).expect("json is parsed");
 }
