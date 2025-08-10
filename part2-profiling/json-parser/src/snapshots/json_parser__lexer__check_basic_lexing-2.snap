@@ -1,0 +1,12 @@
+---
+source: src/lexer.rs
+expression: "lexicize(\"123.4\".to_string())"
+---
+TokenStream {
+    data: "123.4",
+    tokens: [
+        Number(
+            "123.4",
+        ),
+    ],
+}

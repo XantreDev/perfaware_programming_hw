@@ -1,0 +1,18 @@
+---
+source: src/lexer.rs
+expression: "lexicize(\"{ \\\"about\\\": 10 }\".to_string())"
+---
+TokenStream {
+    data: "{ \"about\": 10 }",
+    tokens: [
+        BraceOpen,
+        String(
+            "about",
+        ),
+        Colon,
+        Number(
+            "10",
+        ),
+        BraceClose,
+    ],
+}
