@@ -23,7 +23,6 @@ fn is_whitespace(value: char) -> bool {
 
 #[derive(Debug)]
 pub struct TokenStream {
-    data: String,
     pub tokens: Vec<Token>,
 }
 
@@ -57,7 +56,7 @@ pub fn lexicize(data: String) -> Result<TokenStream, UnknownTokenError> {
         loop {
             let Some((_, char)) = chars.peek() else {
                 drop(chars);
-                return Ok(TokenStream { data, tokens });
+                return Ok(TokenStream { tokens });
             };
             if is_whitespace(char.to_owned()) {
                 chars.next();
@@ -68,7 +67,7 @@ pub fn lexicize(data: String) -> Result<TokenStream, UnknownTokenError> {
 
         let Some((_, char)) = chars.next() else {
             drop(chars);
-            return Ok(TokenStream { data, tokens });
+            return Ok(TokenStream { tokens });
         };
 
         let token = match char {
@@ -160,7 +159,14 @@ fn parse_string<T: Iterator<Item = char>>(
 #[test]
 fn check_basic_lexing() {
     insta::assert_debug_snapshot!(lexicize("{ \"about\": 10 }".to_string()).unwrap());
+}
+#[test]
+fn check_basic_lexing2() {
     insta::assert_debug_snapshot!(lexicize("123.4".to_string()).unwrap());
+}
+
+#[test]
+fn check_basic_lexing3() {
     insta::assert_debug_snapshot!(
         lexicize(
             "{

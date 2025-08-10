@@ -1,9 +1,8 @@
 ---
 source: src/lexer.rs
-expression: "lexicize(\"{\n            \\\"ability\\\": [1, null, false, 2.0, \\\"55\\\", { \\\"obj\\\": 213 }],\n            \\\"key\\\": { \\\"value\\\": 220 }\n        }\".to_string())"
+expression: "lexicize(\"{\n            \\\"ability\\\": [1, null, false, 2.0, \\\"55\\\", { \\\"obj\\\": 213 }],\n            \\\"key\\\": { \\\"value\\\": 220 }\n        }\".to_string()).unwrap()"
 ---
 TokenStream {
-    data: "{\n            \"ability\": [1, null, false, 2.0, \"55\", { \"obj\": 213 }],\n            \"key\": { \"value\": 220 }\n        }",
     tokens: [
         BraceOpen,
         String(

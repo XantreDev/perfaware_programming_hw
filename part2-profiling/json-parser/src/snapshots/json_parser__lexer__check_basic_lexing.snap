@@ -1,9 +1,8 @@
 ---
 source: src/lexer.rs
-expression: "lexicize(\"{ \\\"about\\\": 10 }\".to_string())"
+expression: "lexicize(\"{ \\\"about\\\": 10 }\".to_string()).unwrap()"
 ---
 TokenStream {
-    data: "{ \"about\": 10 }",
     tokens: [
         BraceOpen,
         String(

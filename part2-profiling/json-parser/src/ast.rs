@@ -1,12 +1,9 @@
-use std::{
-    fmt::{Debug, format},
-    iter::Peekable,
-};
+use std::{fmt::Debug, iter::Peekable};
 
 use crate::lexer::{Token, TokenStream};
 
 #[derive(Debug)]
-pub struct KeyValuePair(String, Ast);
+pub struct KeyValuePair(pub String, pub Ast);
 
 #[derive(Debug)]
 pub enum Ast {
