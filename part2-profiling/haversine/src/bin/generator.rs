@@ -126,6 +126,7 @@ fn main() {
     let number_of_pairs: u32 = env::args()
         .nth(2)
         .expect("number_of_pairs must be provided")
+        .replace('_', "")
         .parse()
         .expect("number_of_pairs must be u32");
 
