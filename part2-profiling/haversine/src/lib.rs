@@ -1,3 +1,5 @@
+pub mod time;
+
 trait Squarable {
     fn square(self) -> Self;
 }

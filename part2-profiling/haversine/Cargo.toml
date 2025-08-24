@@ -3,10 +3,13 @@ name = "haversine_generator"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+measure_timer_frequency = []
+
 [[bin]]
 name = "generator"
 
 [dependencies]
 rand = "0.9.1"
 rand_xoshiro = "0.7.0"
-json_parser = { path = "../../json_parser" }
+json_parser = { path = "../json_parser" }
