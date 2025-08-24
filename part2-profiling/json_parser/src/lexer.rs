@@ -244,8 +244,8 @@ fn parse_number(starting_char: &char, lexer: &mut Lexer<'_>) -> Result<f64, Pars
             if is_zero_nine_digit(&char) {
                 is_first_iter = false;
                 skip_char(lexer);
-                fraction = ((char as u64) - ('0' as u64)) as f64 * mult;
-                mult = mult / 10.0;
+                fraction += ((char as u64) - ('0' as u64)) as f64 * mult;
+                mult *= 1.0 / 10.0;
             } else {
                 break;
             }
