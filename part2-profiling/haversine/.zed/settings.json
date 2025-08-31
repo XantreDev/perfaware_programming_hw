@@ -4,6 +4,7 @@
       "initialization_options": {
         "cargo": {}
       }
-    }
+    },
+    "clangd": {}
   }
 }
