@@ -5,10 +5,6 @@
 
 #pragma once
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 struct apple_events_handle {
     struct AppleEvents impl;
 };
@@ -32,7 +28,7 @@ apple_events_handle* apple_events_create() {
 void apple_events_destroy(apple_events_handle* h) {
   delete h;
 }
-int apple_events_get(const apple_events_handle* h, struct perf_counters_c* out) {
+i32 apple_events_get(const apple_events_handle* h, struct perf_counters_c* out) {
     if (h == NULL) return 1;
 
     AppleEvents events = (*h).impl;
@@ -43,7 +39,3 @@ int apple_events_get(const apple_events_handle* h, struct perf_counters_c* out) 
 
     return 0;
 }
-
-#ifdef __cplusplus
-}
-#endif

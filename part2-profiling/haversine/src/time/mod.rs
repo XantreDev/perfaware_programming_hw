@@ -1,50 +1,101 @@
-use std::arch::asm;
 use std::time::Duration;
 
 cfg_if::cfg_if! {
     if #[cfg(target_arch = "aarch64")] {
-        pub fn clocks_now() -> u64 {
-            let mut clocks: u64;
-            unsafe {
-                asm!("isb", "mrs {time}, cntvct_el0", time = out(reg) clocks);
-            }
+        use libc::{c_int};
 
-            clocks
+        #[repr(C)]
+        struct PerfCounters {
+            cycles: u64,
+            branches: u64,
+            missed_branches: u64,
+            instructions: u64
+        }
+        #[repr(C)]
+        struct PerfCountersHandle {_private: [u8; 0]}
+        unsafe extern "C" {
+            fn apple_events_create() -> *const PerfCountersHandle;
+            fn apple_events_destroy(h: *const PerfCountersHandle);
+            fn apple_events_get(h: *const PerfCountersHandle, out: *const PerfCounters) -> c_int;
+        }
+
+
+        pub struct TimeMeasurer {
+            handle: *const PerfCountersHandle,
+            counters: Box<PerfCounters>
+        }
+        impl Drop for TimeMeasurer {
+            fn drop(&mut self) {
+                unsafe {
+                    apple_events_destroy(self.handle);
+                }
+            }
+        }
+        impl TimeMeasurer {
+            #[inline]
+            pub fn init() -> Option<TimeMeasurer> {
+                unsafe {
+                    let events = apple_events_create();
+                    if matches!(events.as_ref(), None) {
+                        return None;
+                    }
+                    let counters = Box::new(PerfCounters {
+                        cycles: 0,
+                        branches: 0,
+                        missed_branches: 0,
+                        instructions: 0
+                    });
+
+                    return Some(TimeMeasurer {
+                        handle: events,
+                        counters: counters
+                    });
+                }
+            }
+            pub fn clocks_now(&mut self) -> u64 {
+                unsafe {
+                    let result = apple_events_get(
+                        self.handle,
+                        &*self.counters as *const PerfCounters
+                    );
+                    if result != 0 {
+                        return 0;
+                    }
+
+                    self.counters.cycles
+                }
+            }
         }
     } else {
-        pub fn clocks_now() -> u64 {
-            unsafe { core::arch::x86::_rdtsc() }
+        pub struct TimeMeasurer;
+        impl TimeMeasurer {
+            pub fn init() -> Option<TimeMeasurer> {
+                Some(TimeMeasurer {});
+            }
+
+            pub fn clocks_now(&mut self) -> u64 {
+                unsafe { core::arch::x86::_rdtsc() }
+            }
         }
     }
 }
 
-cfg_if::cfg_if! {
-    if #[cfg(all(target_arch = "aarch64", not(feature="measure_timer_frequency")))] {
-        pub fn detect_clock_frequency(max_estimation_time: Duration) -> u64 {
-            let mut clocks: u64;
-            unsafe {
-                asm!("mrs {time}, cntfrq_el0", time = out(reg) clocks);
+impl TimeMeasurer {
+    pub fn detect_clock_frequency(&mut self, max_estimation_time: Duration) -> u64 {
+        use std::time::Instant;
+
+        let clocks_at_start = self.clocks_now();
+        let start_instant = Instant::now();
+        loop {
+            if start_instant.elapsed() >= max_estimation_time {
+                break;
             }
-
-            clocks
         }
-    } else {
-        pub fn detect_clock_frequency(max_estimation_time: Duration) -> u64 {
-            use std::time::Instant;
+        let clocks_at_end = self.clocks_now();
 
-            let clocks_at_start = clocks_now();
-            let start_instant = Instant::now();
-            loop {
-                if start_instant.elapsed() >= max_estimation_time {
-                    break;
-                }
-            }
-            let clocks_at_end = clocks_now();
+        let clocks_delta = clocks_at_end - clocks_at_start;
+        let amount = (clocks_delta as f64) / max_estimation_time.as_secs_f64();
 
-            let clocks_delta = clocks_at_end - clocks_at_start;
-            let amount = (clocks_delta as f64) / max_estimation_time.as_secs_f64();
-
-            amount as u64
-        }
+        amount as u64
     }
 }

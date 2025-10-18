@@ -1,10 +1,11 @@
 use std::time::Duration;
 
-use haversine_generator::time::{clocks_now, detect_clock_frequency};
+use haversine_generator::time::TimeMeasurer;
 
 fn main() {
-    let clocks = clocks_now();
-    println!("clocks={}", clocks);
-    let frequency = detect_clock_frequency(Duration::from_millis(50));
+    let mut measurer = TimeMeasurer::init().unwrap();
+
+    println!("clocks={}", measurer.clocks_now());
+    let frequency = measurer.detect_clock_frequency(Duration::from_millis(50));
     println!("frequency={}", frequency);
 }

@@ -2,8 +2,6 @@ mod json_utils;
 
 use std::{fs::File, io::Read, process::exit, time::Duration};
 
-use haversine_generator::time::clocks_now;
-
 use crate::json_utils::JsonData;
 
 fn process_haversine(data: JsonData) -> f64 {
@@ -36,9 +34,9 @@ struct Timestamps {
     after_output: u64,
 }
 impl Timestamps {
-    fn new() -> Timestamps {
+    fn new(base: u64) -> Timestamps {
         Timestamps {
-            base: clocks_now(),
+            base: base,
             after_startup: 0,
             after_file_read: 0,
             after_json_parse: 0,
@@ -137,12 +135,13 @@ Execution time: {:.2}ms; CPU Frequency ~{}Hz
 }
 
 fn main() {
-    use haversine_generator::time::detect_clock_frequency;
+    use haversine_generator::time::TimeMeasurer;
     use std::env;
 
-    let clock_frequency = detect_clock_frequency(Duration::from_millis(50));
+    let mut time_measurer = TimeMeasurer::init().unwrap();
+    let clock_frequency = time_measurer.detect_clock_frequency(Duration::from_millis(50));
 
-    let mut timestamps = Timestamps::new();
+    let mut timestamps = Timestamps::new(time_measurer.clocks_now());
 
     let mut args = env::args();
     if args.len() < 2 {
@@ -153,7 +152,7 @@ fn main() {
     let test_data_path = args.nth(1).expect("first argument must exist");
     let verify_file_path = args.nth(0);
 
-    timestamps.after_startup = clocks_now();
+    timestamps.after_startup = time_measurer.clocks_now();
     let mut json = String::new();
 
     File::open(test_data_path)
@@ -161,14 +160,14 @@ fn main() {
         .read_to_string(&mut json)
         .unwrap();
 
-    timestamps.after_file_read = clocks_now();
+    timestamps.after_file_read = time_measurer.clocks_now();
 
     let json_data = json_utils::prepare_data(json);
 
-    timestamps.after_json_parse = clocks_now();
+    timestamps.after_json_parse = time_measurer.clocks_now();
     let pairs_amount = json_data.pairs.len();
     let distances_sum = process_haversine(json_data);
-    timestamps.after_process = clocks_now();
+    timestamps.after_process = time_measurer.clocks_now();
 
     println!("Pairs amount: {}", pairs_amount);
     println!("Distances sum: {}", distances_sum);
@@ -190,7 +189,7 @@ fn main() {
         }
         _ => {}
     }
-    timestamps.after_output = clocks_now();
+    timestamps.after_output = time_measurer.clocks_now();
 
     println!("{}", format_execution_time(&timestamps, clock_frequency));
 }
