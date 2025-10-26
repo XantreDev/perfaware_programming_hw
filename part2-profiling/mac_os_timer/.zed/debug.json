@@ -1,0 +1,13 @@
+[
+  {
+    "label": "Debug",
+    "build": {
+      "command": "nu",
+      "args": ["./build.nu"],
+      "cwd": "$ZED_WORKTREE_ROOT/$ZED_RELATIVE_DIR/.."
+    },
+    "adapter": "CodeLLDB",
+    "program": "$ZED_WORKTREE_ROOT/$ZED_RELATIVE_DIR/../build/main",
+    "request": "launch"
+  }
+]
