@@ -12,9 +12,9 @@ name = "generator"
 [dependencies]
 rand = "0.9.1"
 rand_xoshiro = "0.7.0"
-json_parser = { path = "../json_parser" }
 libc = "0.2"
 cfg-if = "1.0"
+insta = "1.43.1"
 
 [build-dependencies]
 cc = "1"

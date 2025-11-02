@@ -1,3 +1,13 @@
+pub struct Point {
+    pub x: f64,
+    pub y: f64,
+}
+
+pub type PointPair = (Point, Point);
+
+pub mod json_parser;
+pub mod json_utils;
+pub mod simple_profiler;
 pub mod time;
 
 trait Squarable {
@@ -28,10 +38,3 @@ pub fn reference_haversine(x0: f64, y0: f64, x1: f64, y1: f64, sphere_radius: f6
     let result = c * sphere_radius;
     return result;
 }
-
-pub struct Point {
-    pub x: f64,
-    pub y: f64,
-}
-
-pub type PointPair = (Point, Point);

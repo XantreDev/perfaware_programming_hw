@@ -1,0 +1,11 @@
+---
+source: src/json_parser/lexer.rs
+expression: "lexicize_complete(\"123.4\".to_string()).unwrap()"
+---
+TokenStream {
+    tokens: [
+        Number(
+            123.4,
+        ),
+    ],
+}

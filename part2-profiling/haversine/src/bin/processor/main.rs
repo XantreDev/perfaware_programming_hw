@@ -1,10 +1,8 @@
-mod json_utils;
-
 use std::{fs::File, io::Read, process::exit};
 
-use crate::json_utils::JsonData;
+use haversine_generator::json_utils;
 
-fn process_haversine(data: JsonData) -> f64 {
+fn process_haversine(data: json_utils::JsonData) -> f64 {
     let mut distances_sum = 0.0;
     let weight = 1.0 / (data.pairs.len() as f64);
 

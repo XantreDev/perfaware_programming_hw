@@ -52,7 +52,7 @@ cfg_if::cfg_if! {
                     });
                 }
             }
-            pub fn clocks_now(&mut self) -> u64 {
+            pub fn clocks_now(&self) -> u64 {
                 unsafe {
                     let result = apple_events_get(
                         self.handle,
@@ -73,7 +73,7 @@ cfg_if::cfg_if! {
                 Some(TimeMeasurer {});
             }
 
-            pub fn clocks_now(&mut self) -> u64 {
+            pub fn clocks_now(&self) -> u64 {
                 unsafe { core::arch::x86::_rdtsc() }
             }
         }
@@ -81,7 +81,7 @@ cfg_if::cfg_if! {
 }
 
 impl TimeMeasurer {
-    pub fn detect_clock_frequency(&mut self, max_estimation_time: Duration) -> u64 {
+    pub fn detect_clock_frequency(&self, max_estimation_time: Duration) -> u64 {
         use std::time::Instant;
 
         let clocks_at_start = self.clocks_now();
