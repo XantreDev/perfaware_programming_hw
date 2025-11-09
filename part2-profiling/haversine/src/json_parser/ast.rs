@@ -1,5 +1,7 @@
 use std::{fmt::Debug, iter::Peekable};
 
+use crate::{labels::Labels, with_label, with_label_expr};
+
 use super::lexer::Token;
 
 #[derive(Debug)]
@@ -148,49 +150,53 @@ fn parse_array<T: Iterator<Item = Result<Token, ParseError>>>(
 pub(crate) fn parse_unknown<T: Iterator<Item = Result<Token, ParseError>>>(
     iter: &mut Peekable<T>,
 ) -> Result<Ast, ParseError> {
-    let Some(next_token) = iter.next() else {
-        return Err(ParseError::new("unexpected token stream end"));
-    };
-    let next_token = next_token?;
-    let ast_node = match next_token {
-        Token::Bool(bool) => Ast::Bool(bool),
-        Token::Comma => return Err(ParseError::new("unexpected comma")),
-        Token::Null => Ast::Null,
-        Token::String(str) => Ast::String(str.to_owned()),
-        Token::Number(value) => Ast::Number(value),
-        Token::BraceOpen => {
-            let obj = parse_object(iter)?;
-            let next_token = iter.next();
-            if !matches!(next_token, Some(Ok(Token::BraceClose))) {
+    with_label_expr! { Labels::JsonParseUnknown => {
+
+        let Some(next_token) = iter.next() else {
+            return Err(ParseError::new("unexpected token stream end"));
+        };
+        let next_token = next_token?;
+        let ast_node = match next_token {
+            Token::Bool(bool) => Ast::Bool(bool),
+            Token::Comma => return Err(ParseError::new("unexpected comma")),
+            Token::Null => Ast::Null,
+            Token::String(str) => Ast::String(str.to_owned()),
+            Token::Number(value) => Ast::Number(value),
+            Token::BraceOpen => {
+                let obj = parse_object(iter)?;
+                let next_token = iter.next();
+                if !matches!(next_token, Some(Ok(Token::BraceClose))) {
+                    return Err(ParseError::from_string(format!(
+                        "brace close expected, but got {:?}",
+                        next_token
+                    )));
+                }
+
+                obj
+            }
+            Token::BracketOpen => {
+                let array = parse_array(iter)?;
+
+                let next_token = iter.next();
+
+                if !matches!(next_token, Some(Ok(Token::BracketClose))) {
+                    return Err(ParseError::from_string(format!(
+                        "bracket close expected, but got {:?}",
+                        next_token
+                    )));
+                }
+
+                array
+            }
+            Token::BraceClose | Token::BracketClose | Token::Colon => {
                 return Err(ParseError::from_string(format!(
-                    "brace close expected, but got {:?}",
+                    "invariant {:?} is unexpected",
                     next_token
                 )));
             }
+        };
 
-            obj
-        }
-        Token::BracketOpen => {
-            let array = parse_array(iter)?;
-
-            let next_token = iter.next();
-
-            if !matches!(next_token, Some(Ok(Token::BracketClose))) {
-                return Err(ParseError::from_string(format!(
-                    "bracket close expected, but got {:?}",
-                    next_token
-                )));
-            }
-
-            array
-        }
-        Token::BraceClose | Token::BracketClose | Token::Colon => {
-            return Err(ParseError::from_string(format!(
-                "invariant {:?} is unexpected",
-                next_token
-            )));
-        }
-    };
-
-    Ok(ast_node)
+        Ok(ast_node)
+    }
+    }
 }

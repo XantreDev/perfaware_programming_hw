@@ -1,8 +1,7 @@
 use std::{fs::File, io::Read, process::exit};
 
 use haversine_generator::{
-    json_utils,
-    simple_profiler::{finish_end_print_root_profile, profile_with_label, start_profile},
+    json_utils, labels::Labels, with_label, with_label_expr, with_profiling,
 };
 
 fn process_haversine(data: json_utils::JsonData) -> f64 {
@@ -35,49 +34,60 @@ fn main() {
         exit(1);
     }
 
-    let test_data_path = args.nth(1).expect("first argument must exist");
-    let verify_file_path = args.nth(0);
-    let mut json = String::new();
+    with_profiling! {
+        Labels =>
 
-    start_profile();
+        with_label! {
+            Labels::Args =>
 
-    profile_with_label("json_io", || {
-        File::open(test_data_path)
-            .unwrap()
-            .read_to_string(&mut json)
-            .unwrap();
-    });
+            let test_data_path = args.nth(1).expect("first argument must exist");
+            let verify_file_path = args.nth(0);
+            let mut json = String::new();
+        };
 
-    let json_data = profile_with_label("json_parse", || json_utils::prepare_data(json));
 
-    let (pairs_amount, distances_sum) = profile_with_label("process", || {
-        let pairs_amount = json_data.pairs.len();
-        let distances_sum = process_haversine(json_data);
-        (pairs_amount, distances_sum)
-    });
+        with_label! {
+            Labels::JsonIO =>
 
-    profile_with_label("aftermath", || {
-        println!("Pairs amount: {}", pairs_amount);
-        println!("Distances sum: {}", distances_sum);
+            File::open(test_data_path)
+                .unwrap()
+                .read_to_string(&mut json)
+                .unwrap();
+        };
 
-        match verify_file_path {
-            Some(path) => {
-                let mut buf = Vec::new();
-                File::open(path).unwrap().read_to_end(&mut buf).unwrap();
+        let json_data = with_label_expr! { Labels::JsonParse =>
+            json_utils::prepare_data(json)
+        };
 
-                if buf.len() != 8 * (pairs_amount + 1) {
-                    println!("invalid verify file");
-                    return;
+
+        with_label! {
+            Labels::Haversine =>
+            let pairs_amount = json_data.pairs.len();
+            let distances_sum = process_haversine(json_data);
+        };
+        with_label! {
+            Labels::AfterMath =>
+
+            println!("Pairs amount: {}", pairs_amount);
+            println!("Distances sum: {}", distances_sum);
+
+            match verify_file_path {
+                Some(path) => {
+                    let mut buf = Vec::new();
+                    File::open(path).unwrap().read_to_end(&mut buf).unwrap();
+
+                    if buf.len() != 8 * (pairs_amount + 1) {
+                        println!("invalid verify file");
+                        return;
+                    }
+
+                    let chunk = buf.last_chunk::<8>().unwrap().to_owned();
+                    let reference_sum = f64::from_le_bytes(chunk);
+
+                    println!("Difference: {}", distances_sum - reference_sum);
                 }
-
-                let chunk = buf.last_chunk::<8>().unwrap().to_owned();
-                let reference_sum = f64::from_le_bytes(chunk);
-
-                println!("Difference: {}", distances_sum - reference_sum);
+                _ => {}
             }
-            _ => {}
-        }
-    });
-
-    finish_end_print_root_profile().unwrap();
+        };
+    };
 }

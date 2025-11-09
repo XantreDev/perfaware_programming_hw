@@ -7,6 +7,7 @@ pub type PointPair = (Point, Point);
 
 pub mod json_parser;
 pub mod json_utils;
+pub mod labels;
 pub mod simple_profiler;
 pub mod time;
 
@@ -37,4 +38,46 @@ pub fn reference_haversine(x0: f64, y0: f64, x1: f64, y1: f64, sphere_radius: f6
 
     let result = c * sphere_radius;
     return result;
+}
+
+fn pretty_print(value: f64) -> String {
+    let formatted = value.to_string();
+    let mut str = String::with_capacity(formatted.len() + formatted.len() / 3);
+    let point_idx = formatted.find('.').unwrap_or(formatted.len());
+
+    let start_idx = if value >= 0.0 { 0 } else { 1 };
+    let sep_idx = (point_idx - start_idx) % 3;
+
+    // println!("{} {}", sep_idx, start_idx);
+    // 1000 (4) -> 1_000
+    for (idx, char) in formatted.chars().enumerate() {
+        if idx < start_idx || idx == point_idx {
+            str.push(char);
+        } else if idx < point_idx && idx >= start_idx {
+            if (idx - start_idx) % 3 == sep_idx && idx != start_idx {
+                str.push('_');
+            }
+
+            str.push(char);
+        } else {
+            if (idx - point_idx) % 3 == 1 && idx > point_idx + 1 {
+                str.push('_');
+            }
+            str.push(char);
+        }
+    }
+
+    str
+}
+
+#[test]
+fn pretty_print_test() {
+    assert_eq!(pretty_print(1_000.0), "1_000");
+    assert_eq!(pretty_print(1_000.1), "1_000.1");
+    assert_eq!(pretty_print(-1_000.0), "-1_000");
+    assert_eq!(pretty_print(100.0), "100");
+    assert_eq!(pretty_print(-100.0), "-100");
+    assert_eq!(pretty_print(100.5234), "100.523_4");
+    assert_eq!(pretty_print(123_001_100.5234), "123_001_100.523_4");
+    assert_eq!(pretty_print(1_001_100.523014), "1_001_100.523_014");
 }

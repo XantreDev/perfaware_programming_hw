@@ -44,48 +44,6 @@ impl Timestamps {
     }
 }
 
-fn pretty_print(value: f64) -> String {
-    let formatted = value.to_string();
-    let mut str = String::with_capacity(formatted.len() + formatted.len() / 3);
-    let point_idx = formatted.find('.').unwrap_or(formatted.len());
-
-    let start_idx = if value >= 0.0 { 0 } else { 1 };
-    let sep_idx = (point_idx - start_idx) % 3;
-
-    // println!("{} {}", sep_idx, start_idx);
-    // 1000 (4) -> 1_000
-    for (idx, char) in formatted.chars().enumerate() {
-        if idx < start_idx || idx == point_idx {
-            str.push(char);
-        } else if idx < point_idx && idx >= start_idx {
-            if (idx - start_idx) % 3 == sep_idx && idx != start_idx {
-                str.push('_');
-            }
-
-            str.push(char);
-        } else {
-            if (idx - point_idx) % 3 == 1 && idx > point_idx + 1 {
-                str.push('_');
-            }
-            str.push(char);
-        }
-    }
-
-    str
-}
-
-#[test]
-fn pretty_print_test() {
-    assert_eq!(pretty_print(1_000.0), "1_000");
-    assert_eq!(pretty_print(1_000.1), "1_000.1");
-    assert_eq!(pretty_print(-1_000.0), "-1_000");
-    assert_eq!(pretty_print(100.0), "100");
-    assert_eq!(pretty_print(-100.0), "-100");
-    assert_eq!(pretty_print(100.5234), "100.523_4");
-    assert_eq!(pretty_print(123_001_100.5234), "123_001_100.523_4");
-    assert_eq!(pretty_print(1_001_100.523014), "1_001_100.523_014");
-}
-
 fn format_execution_time(timestamps: &Timestamps, clock_frequency: u64) -> String {
     let total_execution_time_clocks = timestamps.after_output - timestamps.base;
     let total_time = ((total_execution_time_clocks as f64) / (clock_frequency as f64)) * 1_000.0;
@@ -138,7 +96,6 @@ fn main() {
     use std::env;
 
     let time_measurer = TimeMeasurer::init().unwrap();
-    let clock_frequency = time_measurer.detect_clock_frequency(Duration::from_millis(50));
 
     let mut timestamps = Timestamps::new(time_measurer.clocks_now());
 
@@ -189,6 +146,8 @@ fn main() {
         _ => {}
     }
     timestamps.after_output = time_measurer.clocks_now();
+
+    let clock_frequency = time_measurer.detect_clock_frequency(Duration::from_millis(50));
 
     println!("{}", format_execution_time(&timestamps, clock_frequency));
 }
