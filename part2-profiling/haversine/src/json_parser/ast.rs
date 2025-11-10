@@ -108,38 +108,41 @@ fn parse_array<T: Iterator<Item = Result<Token, ParseError>>>(
     iter: &mut Peekable<T>,
 ) -> Result<Ast, ParseError> {
     let mut content = Vec::new();
+    with_label! {
+        Labels::JsonParseArr =>
 
-    loop {
-        let Some(next_token) = iter.peek() else {
-            return Err(ParseError::unexpected_end_of_tokens("array"));
-        };
+        loop {
+            let Some(next_token) = iter.peek() else {
+                return Err(ParseError::unexpected_end_of_tokens("array"));
+            };
 
-        match next_token {
-            Err(err) => return Err(err.clone()),
-            Ok(Token::BracketClose) => {
-                return Ok(Ast::Array(content));
-            }
-            _ => {
-                let ast_node = parse_unknown(iter)?;
+            match next_token {
+                Err(err) => return Err(err.clone()),
+                Ok(Token::BracketClose) => {
+                    return Ok(Ast::Array(content));
+                }
+                _ => {
+                    let ast_node = parse_unknown(iter)?;
 
-                content.push(ast_node);
-                let Some(next_token) = iter.peek() else {
-                    return Err(ParseError::unexpected_end_of_tokens("array"));
-                };
+                    content.push(ast_node);
+                    let Some(next_token) = iter.peek() else {
+                        return Err(ParseError::unexpected_end_of_tokens("array"));
+                    };
 
-                match next_token {
-                    Err(err) => return Err(err.clone()),
-                    Ok(Token::Comma) => {
-                        iter.next();
-                    }
-                    Ok(Token::BracketClose) => {
-                        continue;
-                    }
-                    Ok(next_token) => {
-                        return Err(ParseError::unexpected_token(
-                            next_token,
-                            "BracketClose or Comma",
-                        ));
+                    match next_token {
+                        Err(err) => return Err(err.clone()),
+                        Ok(Token::Comma) => {
+                            iter.next();
+                        }
+                        Ok(Token::BracketClose) => {
+                            continue;
+                        }
+                        Ok(next_token) => {
+                            return Err(ParseError::unexpected_token(
+                                next_token,
+                                "BracketClose or Comma",
+                            ));
+                        }
                     }
                 }
             }

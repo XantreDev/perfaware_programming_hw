@@ -9,6 +9,7 @@ macro_rules! with_label {
 
         $($body)+
 
+        #[allow(unreachable_code)]
         drop(__mark);
     };
 }

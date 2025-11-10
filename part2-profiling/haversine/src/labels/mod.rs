@@ -7,6 +7,7 @@ profiling_labels! {
         JsonParse,
         Haversine,
         AfterMath,
-        JsonParseUnknown
+        JsonParseUnknown,
+        JsonParseArr
     }
 }

@@ -130,8 +130,8 @@ fn main() {
         .parse()
         .expect("number_of_pairs must be u32");
 
-    if number_of_pairs > 10_000_000 {
-        panic!("too much pairs {} (10kk is max)", number_of_pairs)
+    if number_of_pairs > 20_000_000 {
+        panic!("too much pairs {} (20kk is max)", number_of_pairs)
     }
     use std::time::Instant;
     let start = Instant::now();
