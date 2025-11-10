@@ -1,7 +1,7 @@
-use std::time::Duration;
+use std::{arch::asm, time::Duration};
 
 cfg_if::cfg_if! {
-    if #[cfg(target_arch = "aarch64")] {
+    if #[cfg(all(target_arch = "aarch64", feature="mac_os_cycles"))] {
         use libc::{c_int};
 
         #[repr(C)]
@@ -66,6 +66,22 @@ cfg_if::cfg_if! {
                 }
             }
         }
+    } else if #[cfg(target_arch = "aarch64")] {
+        pub struct TimeMeasurer;
+        impl TimeMeasurer {
+            pub fn init() -> Option<TimeMeasurer> {
+                Some(TimeMeasurer{})
+            }
+            pub fn clocks_now(&self) -> u64 {
+                unsafe {
+                    let mut now: u64 = 0;
+                    asm!("mrs {now}, CNTVCT_EL0", now = inout(reg) now);
+
+                    now
+                }
+            }
+        }
+
     } else {
         pub struct TimeMeasurer;
         impl TimeMeasurer {

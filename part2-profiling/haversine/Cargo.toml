@@ -6,6 +6,7 @@ edition = "2024"
 [features]
 measure_timer_frequency = []
 profiler = []
+mac_os_cycles = []
 
 [[bin]]
 name = "generator"
