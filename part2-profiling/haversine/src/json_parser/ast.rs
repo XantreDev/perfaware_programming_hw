@@ -1,6 +1,6 @@
 use std::{fmt::Debug, iter::Peekable};
 
-use crate::{labels::Labels, with_label, with_label_expr};
+use crate::{labels::Labels, with_label, with_label_expr, with_label_fn};
 
 use super::lexer::Token;
 
@@ -150,6 +150,7 @@ fn parse_array<T: Iterator<Item = Result<Token, ParseError>>>(
 pub(crate) fn parse_unknown<T: Iterator<Item = Result<Token, ParseError>>>(
     iter: &mut Peekable<T>,
 ) -> Result<Ast, ParseError> {
+    with_label_expr! { Labels::JsonParse => {
     let Some(next_token) = iter.next() else {
         return Err(ParseError::new("unexpected token stream end"));
     };
@@ -195,4 +196,6 @@ pub(crate) fn parse_unknown<T: Iterator<Item = Result<Token, ParseError>>>(
     };
 
     Ok(ast_node)
+    }
+    }
 }

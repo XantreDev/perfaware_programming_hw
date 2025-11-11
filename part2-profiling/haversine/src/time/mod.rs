@@ -1,7 +1,11 @@
-use std::{arch::asm, time::Duration};
+use std::{
+    alloc::System,
+    arch::asm,
+    time::{Duration, SystemTime},
+};
 
 cfg_if::cfg_if! {
-    if #[cfg(all(target_arch = "aarch64", feature="mac_os_cycles"))] {
+    if #[cfg(all(target_arch = "aarch64", feature="timing_mac_os_cycles"))] {
         use libc::{c_int};
 
         #[repr(C)]
@@ -66,7 +70,33 @@ cfg_if::cfg_if! {
                 }
             }
         }
-    } else if #[cfg(target_arch = "aarch64")] {
+    } else if #[cfg(feature="timing_os")] {
+        use libc::{CLOCK_MONOTONIC, clock_gettime, timespec};
+        pub struct TimeMeasurer;
+
+        impl TimeMeasurer {
+            pub fn init() -> Option<TimeMeasurer> {
+                Some(TimeMeasurer{})
+            }
+            pub fn clocks_now(&self) -> u64 {
+                let mut spec = timespec {tv_nsec: 0, tv_sec: 0};
+                #[cfg(target_vendor = "apple")]
+                const CLOCK_ID: libc::clockid_t = libc::CLOCK_UPTIME_RAW;
+                #[cfg(not(target_vendor = "apple"))]
+                const CLOCK_ID: libc::clockid_t = libc::CLOCK_MONOTONIC;
+                let code = unsafe {
+                     clock_gettime(CLOCK_ID, &mut spec)
+                };
+                assert!(code == 0);
+
+                const NSEC_PER_SEC: u64 = 1_000_000_000;
+
+                let res = (((spec.tv_sec as u64) & 0xFFFF_FFFF) * NSEC_PER_SEC) + (spec.tv_nsec as u64);
+
+                res
+            }
+        }
+    } else if #[cfg(all(target_arch = "aarch64", feature="timing_low_level"))] {
         pub struct TimeMeasurer;
         impl TimeMeasurer {
             pub fn init() -> Option<TimeMeasurer> {
@@ -81,8 +111,7 @@ cfg_if::cfg_if! {
                 }
             }
         }
-
-    } else {
+    } else if #[cfg(feature="timing_low_level")] {
         pub struct TimeMeasurer;
         impl TimeMeasurer {
             pub fn init() -> Option<TimeMeasurer> {
@@ -93,6 +122,8 @@ cfg_if::cfg_if! {
                 unsafe { core::arch::x86::_rdtsc() }
             }
         }
+    } else {
+        panic!("no matching options")
     }
 }
 

@@ -4,17 +4,20 @@ version = "0.1.0"
 edition = "2024"
 
 [features]
+default = ["timing_low_level"]
 measure_timer_frequency = []
 profiler = []
-mac_os_cycles = []
+timing_mac_os_cycles = []
+timing_low_level = []
+timing_os = []
 
 [[bin]]
 name = "generator"
 
 [dependencies]
+libc = "0.2"
 rand = "0.9.1"
 rand_xoshiro = "0.7.0"
-libc = "0.2"
 cfg-if = "1.0"
 insta = "1.43.1"
 

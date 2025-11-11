@@ -9,5 +9,6 @@ profiling_labels! {
         JsonFree,
         Haversine,
         AfterMath,
+        JsonParseUnknown,
     }
 }

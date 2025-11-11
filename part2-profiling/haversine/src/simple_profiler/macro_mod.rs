@@ -15,7 +15,7 @@ macro_rules! with_label {
 }
 #[macro_export]
 macro_rules! with_label_fn {
-    ($label:path => $vis:vis fn $name:tt($($arg:ident:$type:ty),*) -> $ret:ty { $($body:tt)* }) => {
+    ($label:path => $vis:vis fn $name:ident($($arg:ident:$type:ty),* $(,)?) -> $ret:ty { $($body:tt)* }) => {
         $vis fn $name($($arg:$type),*) -> $ret {
             let __mark = if (cfg!(feature="profiler")) {
                 Some($crate::simple_profiler::core::mark_scope($label as u32))
@@ -81,22 +81,22 @@ macro_rules! with_profiling {
     };
 }
 
-profiling_labels! {
-    enum Labels {
-        Outer = 1,
-        Inner
-    }
-}
+// profiling_labels! {
+//     enum Labels {
+//         Outer = 1,
+//         Inner
+//     }
+// }
 
-pub fn main() {
-    with_profiling! { Labels =>
-        with_label! {
-            Labels::Outer =>
+// pub fn main() {
+//     with_profiling! { Labels =>
+//         with_label! {
+//             Labels::Outer =>
 
-            let a = 10;
-            let b = a + 10;
-        };
-    }
+//             let a = 10;
+//             let b = a + 10;
+//         };
+//     }
 
-    println!("{}", b)
-}
+//     println!("{}", b)
+// }
