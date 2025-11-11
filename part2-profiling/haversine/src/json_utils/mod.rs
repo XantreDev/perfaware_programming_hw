@@ -1,3 +1,5 @@
+use crate::{labels::Labels, with_label};
+
 use super::{
     Point, PointPair,
     json_parser::{
@@ -49,26 +51,37 @@ impl AstIterTools for Ast {
 }
 
 pub fn prepare_data(json: String) -> JsonData {
-    let result = parse_json(json).unwrap();
+    with_label! {
+        Labels::JsonParse =>
 
-    let obj = result.as_object().expect("must be obj");
-    let pairs = obj.find_by_key("pairs").unwrap();
-
-    let point_ast_arr = pairs.as_array().unwrap();
-
-    let mut pairs = Vec::with_capacity(point_ast_arr.len());
-
-    for point_json in point_ast_arr {
-        let obj = point_json.as_object().unwrap();
-
-        let x0 = obj.find_by_key("x0").unwrap().as_f64().unwrap();
-        let x1 = obj.find_by_key("x1").unwrap().as_f64().unwrap();
-        let y0 = obj.find_by_key("y0").unwrap().as_f64().unwrap();
-        let y1 = obj.find_by_key("y1").unwrap().as_f64().unwrap();
-
-        pairs.push((Point { x: *x0, y: *y0 }, Point { x: *x1, y: *y1 }))
+        let result = parse_json(json).unwrap();
     }
 
+    with_label! {
+        Labels::JsonLookup =>
+
+        let obj = result.as_object().expect("must be obj");
+        let pairs = obj.find_by_key("pairs").unwrap();
+
+        let point_ast_arr = pairs.as_array().unwrap();
+
+        let mut pairs = Vec::with_capacity(point_ast_arr.len());
+
+        for point_json in point_ast_arr {
+            let obj = point_json.as_object().unwrap();
+
+            let x0 = obj.find_by_key("x0").unwrap().as_f64().unwrap();
+            let x1 = obj.find_by_key("x1").unwrap().as_f64().unwrap();
+            let y0 = obj.find_by_key("y0").unwrap().as_f64().unwrap();
+            let y1 = obj.find_by_key("y1").unwrap().as_f64().unwrap();
+
+            pairs.push((Point { x: *x0, y: *y0 }, Point { x: *x1, y: *y1 }))
+        }
+    }
+
+    with_label! {Labels::JsonFree =>
+        drop(result);
+    };
     JsonData { pairs }
 }
 

@@ -108,41 +108,38 @@ fn parse_array<T: Iterator<Item = Result<Token, ParseError>>>(
     iter: &mut Peekable<T>,
 ) -> Result<Ast, ParseError> {
     let mut content = Vec::new();
-    with_label! {
-        Labels::JsonParseArr =>
 
-        loop {
-            let Some(next_token) = iter.peek() else {
-                return Err(ParseError::unexpected_end_of_tokens("array"));
-            };
+    loop {
+        let Some(next_token) = iter.peek() else {
+            return Err(ParseError::unexpected_end_of_tokens("array"));
+        };
 
-            match next_token {
-                Err(err) => return Err(err.clone()),
-                Ok(Token::BracketClose) => {
-                    return Ok(Ast::Array(content));
-                }
-                _ => {
-                    let ast_node = parse_unknown(iter)?;
+        match next_token {
+            Err(err) => return Err(err.clone()),
+            Ok(Token::BracketClose) => {
+                return Ok(Ast::Array(content));
+            }
+            _ => {
+                let ast_node = parse_unknown(iter)?;
 
-                    content.push(ast_node);
-                    let Some(next_token) = iter.peek() else {
-                        return Err(ParseError::unexpected_end_of_tokens("array"));
-                    };
+                content.push(ast_node);
+                let Some(next_token) = iter.peek() else {
+                    return Err(ParseError::unexpected_end_of_tokens("array"));
+                };
 
-                    match next_token {
-                        Err(err) => return Err(err.clone()),
-                        Ok(Token::Comma) => {
-                            iter.next();
-                        }
-                        Ok(Token::BracketClose) => {
-                            continue;
-                        }
-                        Ok(next_token) => {
-                            return Err(ParseError::unexpected_token(
-                                next_token,
-                                "BracketClose or Comma",
-                            ));
-                        }
+                match next_token {
+                    Err(err) => return Err(err.clone()),
+                    Ok(Token::Comma) => {
+                        iter.next();
+                    }
+                    Ok(Token::BracketClose) => {
+                        continue;
+                    }
+                    Ok(next_token) => {
+                        return Err(ParseError::unexpected_token(
+                            next_token,
+                            "BracketClose or Comma",
+                        ));
                     }
                 }
             }
@@ -153,53 +150,49 @@ fn parse_array<T: Iterator<Item = Result<Token, ParseError>>>(
 pub(crate) fn parse_unknown<T: Iterator<Item = Result<Token, ParseError>>>(
     iter: &mut Peekable<T>,
 ) -> Result<Ast, ParseError> {
-    with_label_expr! { Labels::JsonParseUnknown => {
-
-        let Some(next_token) = iter.next() else {
-            return Err(ParseError::new("unexpected token stream end"));
-        };
-        let next_token = next_token?;
-        let ast_node = match next_token {
-            Token::Bool(bool) => Ast::Bool(bool),
-            Token::Comma => return Err(ParseError::new("unexpected comma")),
-            Token::Null => Ast::Null,
-            Token::String(str) => Ast::String(str.to_owned()),
-            Token::Number(value) => Ast::Number(value),
-            Token::BraceOpen => {
-                let obj = parse_object(iter)?;
-                let next_token = iter.next();
-                if !matches!(next_token, Some(Ok(Token::BraceClose))) {
-                    return Err(ParseError::from_string(format!(
-                        "brace close expected, but got {:?}",
-                        next_token
-                    )));
-                }
-
-                obj
-            }
-            Token::BracketOpen => {
-                let array = parse_array(iter)?;
-
-                let next_token = iter.next();
-
-                if !matches!(next_token, Some(Ok(Token::BracketClose))) {
-                    return Err(ParseError::from_string(format!(
-                        "bracket close expected, but got {:?}",
-                        next_token
-                    )));
-                }
-
-                array
-            }
-            Token::BraceClose | Token::BracketClose | Token::Colon => {
+    let Some(next_token) = iter.next() else {
+        return Err(ParseError::new("unexpected token stream end"));
+    };
+    let next_token = next_token?;
+    let ast_node = match next_token {
+        Token::Bool(bool) => Ast::Bool(bool),
+        Token::Comma => return Err(ParseError::new("unexpected comma")),
+        Token::Null => Ast::Null,
+        Token::String(str) => Ast::String(str.to_owned()),
+        Token::Number(value) => Ast::Number(value),
+        Token::BraceOpen => {
+            let obj = parse_object(iter)?;
+            let next_token = iter.next();
+            if !matches!(next_token, Some(Ok(Token::BraceClose))) {
                 return Err(ParseError::from_string(format!(
-                    "invariant {:?} is unexpected",
+                    "brace close expected, but got {:?}",
                     next_token
                 )));
             }
-        };
 
-        Ok(ast_node)
-    }
-    }
+            obj
+        }
+        Token::BracketOpen => {
+            let array = parse_array(iter)?;
+
+            let next_token = iter.next();
+
+            if !matches!(next_token, Some(Ok(Token::BracketClose))) {
+                return Err(ParseError::from_string(format!(
+                    "bracket close expected, but got {:?}",
+                    next_token
+                )));
+            }
+
+            array
+        }
+        Token::BraceClose | Token::BracketClose | Token::Colon => {
+            return Err(ParseError::from_string(format!(
+                "invariant {:?} is unexpected",
+                next_token
+            )));
+        }
+    };
+
+    Ok(ast_node)
 }

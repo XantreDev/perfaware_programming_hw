@@ -14,6 +14,20 @@ macro_rules! with_label {
     };
 }
 #[macro_export]
+macro_rules! with_label_fn {
+    ($label:path => $vis:vis fn $name:tt($($arg:ident:$type:ty),*) -> $ret:ty { $($body:tt)* }) => {
+        $vis fn $name($($arg:$type),*) -> $ret {
+            let __mark = if (cfg!(feature="profiler")) {
+                Some($crate::simple_profiler::core::mark_scope($label as u32))
+            } else {
+                None
+            };
+
+            $($body)*
+        }
+    };
+}
+#[macro_export]
 macro_rules! with_label_expr {
     ($label:path => $body:block) => {{
         let __mark = if (cfg!(feature="profiler")) {
@@ -59,15 +73,11 @@ macro_rules! profiling_labels {
 #[macro_export]
 macro_rules! with_profiling {
     ($labels:ident => $($t: tt)+) => {
-        if (cfg!(feature="profiler")) {
-            $crate::simple_profiler::core::start_profile();
-        }
+        $crate::simple_profiler::core::start_profile();
 
         $($t)+
 
-        if (cfg!(feature="profiler")) {
-            $crate::simple_profiler::core::finish_end_print_root_profile($labels::ALL).unwrap();
-        }
+        $crate::simple_profiler::core::finish_end_print_root_profile($labels::ALL).unwrap();
     };
 }
 

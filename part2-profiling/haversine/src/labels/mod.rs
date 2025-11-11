@@ -5,9 +5,9 @@ profiling_labels! {
         Args = 1,
         JsonIO,
         JsonParse,
+        JsonLookup,
+        JsonFree,
         Haversine,
         AfterMath,
-        JsonParseUnknown,
-        JsonParseArr
     }
 }
