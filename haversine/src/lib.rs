@@ -8,6 +8,7 @@ pub type PointPair = (Point, Point);
 pub mod json_parser;
 pub mod json_utils;
 pub mod labels;
+pub mod rep_tester;
 pub mod simple_profiler;
 pub mod time;
 
@@ -40,6 +41,9 @@ pub fn reference_haversine(x0: f64, y0: f64, x1: f64, y1: f64, sphere_radius: f6
     return result;
 }
 
+fn pretty_print_u64(value: u64) -> String {
+    pretty_print(value as f64)
+}
 fn pretty_print(value: f64) -> String {
     let formatted = value.to_string();
     let mut str = String::with_capacity(formatted.len() + formatted.len() / 3);

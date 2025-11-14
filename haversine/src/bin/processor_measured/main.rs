@@ -1,6 +1,12 @@
 use haversine_generator::json_utils;
 
-use std::{fs::File, io::Read, process::exit, time::Duration};
+use std::{
+    fs::{self, File},
+    io::Read,
+    path::Path,
+    process::exit,
+    time::Duration,
+};
 
 fn process_haversine(data: json_utils::JsonData) -> f64 {
     let mut distances_sum = 0.0;
@@ -105,16 +111,14 @@ fn main() {
         exit(1);
     }
 
-    let test_data_path = args.nth(1).expect("first argument must exist");
+    let first_arg = &args.nth(1).expect("first argument must exist");
+
+    let test_data_path = Path::new(first_arg);
     let verify_file_path = args.nth(0);
 
     timestamps.after_startup = time_measurer.clocks_now();
-    let mut json = String::new();
 
-    File::open(test_data_path)
-        .unwrap()
-        .read_to_string(&mut json)
-        .unwrap();
+    let json = fs::read_to_string(test_data_path).unwrap();
 
     timestamps.after_file_read = time_measurer.clocks_now();
 

@@ -1,8 +1,12 @@
-use std::{fs::File, io::Read, process::exit};
-
-use haversine_generator::{
-    json_utils, labels::Labels, with_label, with_label_expr, with_profiling,
+use std::{
+    fs::{self, File},
+    io::Read,
+    os::unix::fs::MetadataExt,
+    path::Path,
+    process::exit,
 };
+
+use haversine_generator::{PointPair, json_utils, labels::Labels, with_label, with_profiling};
 
 fn process_haversine(data: json_utils::JsonData) -> f64 {
     let mut distances_sum = 0.0;
@@ -39,30 +43,31 @@ fn main() {
 
         with_label! {
             Labels::Args =>
-
-            let test_data_path = args.nth(1).expect("first argument must exist");
+            let first_arg = &args.nth(1).expect("first argument must exist");
+            let test_data_path = Path::new(first_arg);
             let verify_file_path = args.nth(0);
-            let mut json = String::new();
         };
 
 
-        with_label! {
-            Labels::JsonIO =>
 
-            File::open(test_data_path)
-                .unwrap()
-                .read_to_string(&mut json)
+        with_label! {
+            Labels::PreIO =>
+            let file = File::open(test_data_path)
                 .unwrap();
-        };
-
-        let json_data = with_label_expr! { Labels::JsonParse =>
-            json_utils::prepare_data(json)
-        };
-
+            let meta = file.metadata().unwrap();
+        }
 
         with_label! {
-            Labels::Haversine =>
-            let pairs_amount = json_data.pairs.len();
+            Labels::IO where bytes=meta.size() =>
+            let json = fs::read_to_string(test_data_path).unwrap();
+        };
+
+        let json_data = json_utils::prepare_data(json);
+
+        let pairs_amount = json_data.pairs.len();
+        with_label! {
+            Labels::Haversine where bytes=pairs_amount * size_of::<PointPair>() =>
+
             let distances_sum = process_haversine(json_data);
         };
         with_label! {

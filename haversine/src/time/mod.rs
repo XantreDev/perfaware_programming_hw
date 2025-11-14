@@ -1,8 +1,4 @@
-use std::{
-    alloc::System,
-    arch::asm,
-    time::{Duration, SystemTime},
-};
+use std::{arch::asm, time::Duration};
 
 cfg_if::cfg_if! {
     if #[cfg(all(target_arch = "aarch64", feature="timing_mac_os_cycles"))] {
@@ -97,6 +93,8 @@ cfg_if::cfg_if! {
             }
         }
     } else if #[cfg(all(target_arch = "aarch64", feature="timing_low_level"))] {
+        use std::arch::asm;
+
         pub struct TimeMeasurer;
         impl TimeMeasurer {
             pub fn init() -> Option<TimeMeasurer> {
@@ -115,11 +113,13 @@ cfg_if::cfg_if! {
         pub struct TimeMeasurer;
         impl TimeMeasurer {
             pub fn init() -> Option<TimeMeasurer> {
-                Some(TimeMeasurer {});
+                Some(TimeMeasurer {})
             }
 
             pub fn clocks_now(&self) -> u64 {
-                unsafe { core::arch::x86::_rdtsc() }
+                unsafe {
+                    core::arch::x86_64::_rdtsc()
+                }
             }
         }
     } else {

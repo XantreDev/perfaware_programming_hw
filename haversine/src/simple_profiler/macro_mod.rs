@@ -1,27 +1,40 @@
 #[macro_export]
-macro_rules! with_label {
-    ($label:path => $($body:tt)+) => {
-        let __mark = if (cfg!(feature="profiler")) {
-            Some($crate::simple_profiler::core::mark_scope($label as u32))
+macro_rules! mark_scope {
+    (@mark $label: path, $bytes: expr) => {
+        if (cfg!(feature = "profiler")) {
+            Some($crate::simple_profiler::core::mark_scope(
+                $label as u32,
+                $bytes as u64,
+            ))
         } else {
             None
-        };
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! with_label {
+    (@inner $label:path, $bytes:expr, $($body:tt)+) => {
+        let __mark = $crate::mark_scope!(@mark $label, $bytes);
 
         $($body)+
 
         #[allow(unreachable_code)]
         drop(__mark);
     };
+
+    ($label:path => $($body:tt)+) => {
+        with_label!(@inner $label, 0, $($body)+)
+    };
+    ($label:path where bytes=$bytes:expr => $($body:tt)+) => {
+        with_label!(@inner $label, $bytes, $($body)+)
+    };
 }
 #[macro_export]
 macro_rules! with_label_fn {
     ($label:path => $vis:vis fn $name:ident($($arg:ident:$type:ty),* $(,)?) -> $ret:ty { $($body:tt)* }) => {
         $vis fn $name($($arg:$type),*) -> $ret {
-            let __mark = if (cfg!(feature="profiler")) {
-                Some($crate::simple_profiler::core::mark_scope($label as u32))
-            } else {
-                None
-            };
+            let __mark = $crate::mark_scope!(@mark $label, 0);
 
             $($body)*
         }
@@ -29,12 +42,8 @@ macro_rules! with_label_fn {
 }
 #[macro_export]
 macro_rules! with_label_expr {
-    ($label:path => $body:block) => {{
-        let __mark = if (cfg!(feature="profiler")) {
-            Some($crate::simple_profiler::core::mark_scope($label as u32))
-        } else {
-            None
-        };
+    (@inner $label:path, $bytes: expr, $body:tt) => {{
+        let __mark = $crate::mark_scope!(@mark $label, $bytes);
 
         let __result = $body;
 
@@ -42,6 +51,17 @@ macro_rules! with_label_expr {
 
         __result
     }};
+
+    ($label:path where bytes=$bytes:expr => $body:block) => {
+        with_label_expr!(@inner $label, $bytes, $body)
+    };
+    ($label:path where bytes=$bytes:expr => $body:expr) => {
+        with_label_expr!(@inner $label, $bytes, $body)
+    };
+
+    ($label:path => $body:block) => {
+        with_label_expr!(@inner $label, 0, $body)
+    };
     ($label:path => $body:expr) => {
         with_label_expr!($label => {$body})
     };

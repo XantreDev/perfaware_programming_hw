@@ -52,7 +52,7 @@ impl AstIterTools for Ast {
 
 pub fn prepare_data(json: String) -> JsonData {
     with_label! {
-        Labels::JsonParse =>
+        Labels::JsonParse where bytes=json.len() =>
 
         let result = parse_json(json).unwrap();
     }
