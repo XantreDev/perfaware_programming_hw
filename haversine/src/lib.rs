@@ -1,3 +1,5 @@
+use std::usize;
+
 pub struct Point {
     pub x: f64,
     pub y: f64,
@@ -42,9 +44,9 @@ pub fn reference_haversine(x0: f64, y0: f64, x1: f64, y1: f64, sphere_radius: f6
 }
 
 fn pretty_print_u64(value: u64) -> String {
-    pretty_print(value as f64)
+    pretty_print_with_options(value as f64, 0)
 }
-fn pretty_print(value: f64) -> String {
+fn pretty_print_with_options(value: f64, after_dot: usize) -> String {
     let formatted = value.to_string();
     let mut str = String::with_capacity(formatted.len() + formatted.len() / 3);
     let point_idx = formatted.find('.').unwrap_or(formatted.len());
@@ -55,6 +57,9 @@ fn pretty_print(value: f64) -> String {
     // println!("{} {}", sep_idx, start_idx);
     // 1000 (4) -> 1_000
     for (idx, char) in formatted.chars().enumerate() {
+        if point_idx != formatted.len() && idx.saturating_sub(point_idx) >= after_dot + 1 {
+            break;
+        }
         if idx < start_idx || idx == point_idx {
             str.push(char);
         } else if idx < point_idx && idx >= start_idx {
@@ -72,6 +77,9 @@ fn pretty_print(value: f64) -> String {
     }
 
     str
+}
+fn pretty_print(value: f64) -> String {
+    pretty_print_with_options(value, usize::MAX - 1)
 }
 
 #[test]

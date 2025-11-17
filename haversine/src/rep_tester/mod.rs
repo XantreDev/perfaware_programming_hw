@@ -4,7 +4,7 @@ use std::{
     u64,
 };
 
-use crate::{pretty_print_u64, time::TimeMeasurer};
+use crate::{pretty_print, pretty_print_u64, pretty_print_with_options, time::TimeMeasurer};
 
 #[derive(Debug)]
 enum Status {
@@ -13,13 +13,56 @@ enum Status {
     Errored,
     Finished,
 }
+
+#[repr(usize)]
+enum VectorItem {
+    Clocks = 1,
+    PageFaults,
+    __CountIdentsLast,
+}
+impl VectorItem {
+    #[inline(always)]
+    fn value(self) -> usize {
+        self as usize
+    }
+}
+const VEC_SIZE: usize = VectorItem::__CountIdentsLast as usize;
+
+type RunVector = [u64; VEC_SIZE];
+type RunVectorF64 = [f64; VEC_SIZE];
+
 struct RepRun {
     name: &'static str,
     bytes: u64,
-    max: u64,
-    total: u64,
-    min: u64,
-    avg: f64,
+    runs: u64,
+    start: RunVector,
+    min: RunVector,
+    max: RunVector,
+    avg: RunVectorF64,
+}
+impl RepRun {
+    const MIN_DEFAULT: u64 = u64::MAX;
+    const ZERO: u64 = 0;
+    const AVG_DEFAULT: f64 = 0.0;
+}
+
+#[cfg(target_family = "unix")]
+fn page_faults() -> u64 {
+    use std::mem::MaybeUninit;
+
+    use libc;
+    let mut usage = MaybeUninit::<libc::rusage>::uninit();
+
+    unsafe {
+        use libc::getrusage;
+
+        let result = getrusage(libc::RUSAGE_SELF, usage.as_mut_ptr());
+        if result != 0 {
+            panic!("cannot get page fault - getrusage returned {}", result);
+        }
+
+        usage.assume_init_ref().ru_minflt as u64 + usage.assume_init_ref().ru_majflt as u64
+    }
 }
 
 static EMPTY: &'static str = "";
@@ -29,21 +72,27 @@ impl RepRun {
         RepRun {
             name: EMPTY,
             bytes: 0,
-            max: 0,
-            total: 0,
-            avg: 0.0,
-            min: u64::MAX,
+            runs: 0,
+
+            start: [RepRun::ZERO; VEC_SIZE],
+
+            avg: [RepRun::AVG_DEFAULT; VEC_SIZE],
+            max: [RepRun::ZERO; VEC_SIZE],
+            min: [RepRun::MIN_DEFAULT; VEC_SIZE],
         }
     }
 
     #[inline(always)]
     fn clear(&mut self) {
         self.name = EMPTY;
-        self.max = 0;
-        self.avg = 0.0;
-        self.min = u64::MAX;
         self.bytes = 0;
-        self.total = 0;
+        self.runs = 0;
+
+        self.start.fill(RepRun::ZERO);
+
+        self.avg.fill(RepRun::AVG_DEFAULT);
+        self.max.fill(RepRun::ZERO);
+        self.min.fill(RepRun::MIN_DEFAULT);
     }
 }
 pub struct RepTester {
@@ -52,11 +101,9 @@ pub struct RepTester {
     measurer: TimeMeasurer,
 
     is_running: bool,
-    tries: u64,
     try_before: u64,
     timeout: u64,
     timer_frequency: u64,
-    start_time: u64,
     counter: u32,
 
     run: RepRun,
@@ -75,8 +122,6 @@ impl RepTester {
             run: RepRun::empty(),
             timeout: RepTester::INIT,
             timer_frequency: RepTester::INIT,
-            start_time: RepTester::INIT,
-            tries: RepTester::INIT,
             try_before: RepTester::INIT,
         })
     }
@@ -131,7 +176,8 @@ impl RepTester {
             }
             Status::Testing => {
                 self.is_running = true;
-                self.start_time = self.measurer.clocks_now();
+                self.run.start[VectorItem::Clocks.value()] = self.measurer.clocks_now();
+                self.run.start[VectorItem::PageFaults.value()] = page_faults();
             }
             _ => {
                 self.status = Status::Errored;
@@ -142,28 +188,43 @@ impl RepTester {
 
     pub fn end_run(&mut self) {
         let now = self.measurer.clocks_now();
-        let elapsed = now - self.start_time;
+        let page_faults = page_faults();
 
         match self.status {
             Status::Testing if !self.is_running => {
                 self.error("Invalid end_run command");
             }
-            Status::Testing if now <= self.start_time => {
+            Status::Testing if now <= self.run.start[VectorItem::Clocks.value()] => {
                 self.error("Time travel is forbidden outside of Hogwarts");
             }
             Status::Testing => {
                 self.is_running = false;
-                let total = self.run.total + 1;
-                self.run.total = total;
+                let total = self.run.runs + 1;
+                self.run.runs = total;
 
-                self.run.avg =
-                    (self.run.avg * (total - 1) as f64 + (elapsed as f64)) / total as f64;
-                let is_min = elapsed < self.run.min;
-                if is_min {
-                    self.run.min = elapsed;
+                let current_vec: RunVector = [
+                    0,
+                    now - self.run.start[VectorItem::Clocks.value()],
+                    page_faults - self.run.start[VectorItem::PageFaults.value()],
+                ];
+
+                for i in 0..current_vec.len() {
+                    self.run.avg[i] = (self.run.avg[i] * (total - 1) as f64
+                        + (current_vec[i] as f64))
+                        / total as f64;
+                }
+
+                if current_vec[VectorItem::Clocks.value()]
+                    < self.run.min[VectorItem::Clocks.value()]
+                {
+                    self.run.min = current_vec;
                     self.try_before = now + self.timeout;
                 }
-                self.run.max = self.run.max.max(elapsed);
+                if current_vec[VectorItem::Clocks.value()]
+                    > self.run.max[VectorItem::Clocks.value()]
+                {
+                    self.run.max = current_vec;
+                }
             }
             _ => {
                 self.error("Invalid end_run");
@@ -186,13 +247,17 @@ impl RepTester {
                 write!(
                     out,
                     "The best run: {}\nThe worst run: {}\nAverage: {}\n\n",
-                    performance_measurement(self.run.min, self.timer_frequency, self.run.bytes),
-                    performance_measurement(self.run.max, self.timer_frequency, self.run.bytes),
                     performance_measurement(
-                        self.run.avg as u64,
+                        to_run_vector_f64(&self.run.min),
                         self.timer_frequency,
                         self.run.bytes
-                    )
+                    ),
+                    performance_measurement(
+                        to_run_vector_f64(&self.run.max),
+                        self.timer_frequency,
+                        self.run.bytes
+                    ),
+                    performance_measurement(self.run.avg, self.timer_frequency, self.run.bytes)
                 )
                 .unwrap();
                 out.flush().unwrap();
@@ -218,7 +283,11 @@ impl RepTester {
                 writeln!(
                     out,
                     "The best run: {}",
-                    performance_measurement(self.run.min, self.timer_frequency, self.run.bytes),
+                    performance_measurement(
+                        to_run_vector_f64(&self.run.min),
+                        self.timer_frequency,
+                        self.run.bytes
+                    ),
                 )
                 .unwrap();
                 out.flush().unwrap();
@@ -238,8 +307,6 @@ impl RepTester {
         self.counter = 0;
         self.timeout = RepTester::INIT;
         self.timer_frequency = RepTester::INIT;
-        self.start_time = RepTester::INIT;
-        self.tries = RepTester::INIT;
         self.try_before = RepTester::INIT;
     }
 }
@@ -247,18 +314,48 @@ impl RepTester {
 fn print_header(out: &mut Stdout, name: &'static str) -> io::Result<()> {
     writeln!(out, "--- {} ---", name)
 }
-fn performance_measurement(clocks: u64, timer_frequency: u64, bytes: u64) -> String {
-    if bytes == 0 || clocks == 0 {
+
+fn to_run_vector_f64(vector: &RunVector) -> RunVectorF64 {
+    vector.map(|it| it as f64)
+}
+
+fn performance_measurement(counts: RunVectorF64, timer_frequency: u64, bytes: u64) -> String {
+    let clocks = counts[VectorItem::Clocks.value()];
+    if bytes == 0 || clocks == 0.0 {
         return String::new();
     }
 
     let time = clocks as f64 / timer_frequency as f64;
-
     let throughput = (bytes as f64 / time) / (1024.0 * 1024.0);
+
+    let page_faults = if counts[VectorItem::PageFaults.value()] > 0.0 {
+        let faults = counts[VectorItem::PageFaults.value()];
+        let mut pf_per_byte = bytes as f64 / faults;
+        let unit = if pf_per_byte > 1024.0 * 1024.0 {
+            pf_per_byte /= 1024.0 * 1024.0;
+            "m"
+        } else if pf_per_byte > 1024.0 {
+            pf_per_byte /= 1024.0;
+            "k"
+        } else {
+            "b"
+        };
+
+        format!(
+            "; PF={} ({}{}/fault)",
+            pretty_print_with_options(faults, 3),
+            pretty_print_with_options(pf_per_byte, 3),
+            unit
+        )
+    } else {
+        String::new()
+    };
+
     format!(
-        "{}({:.2} ms) {:.3} mb/s",
-        pretty_print_u64(clocks),
+        "{}({:.2} ms) {:.3} mb/s{}",
+        pretty_print_with_options(clocks, 3),
         time * 1000.0,
-        throughput
+        throughput,
+        page_faults
     )
 }
