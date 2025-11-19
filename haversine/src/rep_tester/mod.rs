@@ -47,7 +47,7 @@ impl RepRun {
 }
 
 #[cfg(target_family = "unix")]
-fn page_faults() -> u64 {
+pub fn page_faults() -> u64 {
     use std::mem::MaybeUninit;
 
     use libc;
@@ -358,4 +358,36 @@ fn performance_measurement(counts: RunVectorF64, timer_frequency: u64, bytes: u6
         throughput,
         page_faults
     )
+}
+
+#[macro_export]
+macro_rules! rep_run {
+    ($rep_tester: expr, name = $name:expr, len=$len:expr, before = {$($before:tt)*}, block = {$($block:tt)*}, check = {$check:expr}, after_run={$($after:tt)*}) => {{
+        let len = $len;
+        $rep_tester.init($name, len as u64, 3.0);
+
+        while $rep_tester.should_continue() {
+            $($before)*
+            $rep_tester.start_run();
+            $($block)*
+            $rep_tester.end_run();
+
+            if !$check {
+                $rep_tester.error("didn't pass validity check");
+            }
+
+            $rep_tester.print();
+
+            $($after)*
+        }
+
+        $rep_tester.print();
+        $rep_tester.clear();
+    }};
+
+    ($rep_tester: expr, name = $name:expr, len=$len:expr, before = {$($before:tt)*}, block = {$($block:tt)*}, check = {$check:expr}$(,)?) => {
+        rep_run!(
+            $rep_tester, name = $name, len=$len, before = {$($before)*}, block = {$($block)*}, check = {$check}, after_run = {}
+        );
+    }
 }

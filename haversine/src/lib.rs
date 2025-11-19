@@ -13,6 +13,7 @@ pub mod labels;
 pub mod rep_tester;
 pub mod simple_profiler;
 pub mod time;
+pub mod write;
 
 trait Squarable {
     fn square(self) -> Self;
