@@ -33,6 +33,10 @@ impl RawAlloc {
         RawAlloc(ptr, bytes)
     }
 
+    pub fn as_ptr(&self) -> *const libc::c_void {
+        self.0
+    }
+
     pub fn as_u8_slice_mut<'a>(&'a self) -> &'a mut [u8] {
         unsafe { std::slice::from_raw_parts_mut(self.0 as *mut u8, self.1) }
     }
