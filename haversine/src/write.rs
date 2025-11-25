@@ -1,8 +1,10 @@
+#[inline]
 pub fn write_linear(slice: &mut [u8], seed: usize, until: usize) {
     for j in 0..until {
         slice[j] = (j + seed) as u8;
     }
 }
+#[inline]
 pub fn write_backwards(slice: &mut [u8], seed: usize, until: usize) {
     let len = slice.len();
     for j in 0..until {
@@ -35,6 +37,10 @@ impl RawAlloc {
 
     pub fn as_ptr(&self) -> *const libc::c_void {
         self.0
+    }
+
+    pub fn as_u8_ptr(&self) -> *const u8 {
+        self.0 as *const u8
     }
 
     pub fn as_u8_slice_mut<'a>(&'a self) -> &'a mut [u8] {

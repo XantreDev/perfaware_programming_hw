@@ -10,6 +10,7 @@ pub type PointPair = (Point, Point);
 pub mod json_parser;
 pub mod json_utils;
 pub mod labels;
+pub mod pointer;
 pub mod rep_tester;
 pub mod simple_profiler;
 pub mod time;
