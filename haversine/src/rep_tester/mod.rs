@@ -364,7 +364,7 @@ fn performance_measurement(counts: RunVectorF64, timer_frequency: u64, bytes: u6
 macro_rules! rep_run {
     ($rep_tester: expr, name = $name:expr, len=$len:expr, before = {$($before:tt)*}, block = {$($block:tt)*}, check = {$check:expr}, after_run={$($after:tt)*}) => {{
         let len = $len;
-        $rep_tester.init($name, len as u64, 8.0);
+        $rep_tester.init($name, len as u64, 3.0);
 
         while $rep_tester.should_continue() {
             $($before)*
@@ -384,6 +384,18 @@ macro_rules! rep_run {
         $rep_tester.print();
         $rep_tester.clear();
     }};
+
+    ($rep_tester: expr, name = $name:expr, len=$len:expr, block = {$($block:tt)*} $(,)?) => {
+        rep_run!(
+            $rep_tester, name = $name, len=$len, before = {}, block = {$($block)*}, check = {true}, after_run = {}
+        );
+    };
+
+    ($rep_tester: expr, name = $name:expr, len=$len:expr, before = {$($before:tt)*}, block = {$($block:tt)*} $(,)?) => {
+        rep_run!(
+            $rep_tester, name = $name, len=$len, before = {$($before)*}, block = {$($block)*}, check = {true}, after_run = {}
+        );
+    };
 
     ($rep_tester: expr, name = $name:expr, len=$len:expr, before = {$($before:tt)*}, block = {$($block:tt)*}, check = {$check:expr}$(,)?) => {
         rep_run!(

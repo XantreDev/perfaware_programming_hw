@@ -35,7 +35,14 @@ impl RawAlloc {
         RawAlloc(ptr, bytes)
     }
 
+    pub fn size(&self) -> usize {
+        self.1
+    }
     pub fn as_ptr(&self) -> *const libc::c_void {
+        self.0
+    }
+
+    pub fn as_mut_ptr(&self) -> *mut libc::c_void {
         self.0
     }
 

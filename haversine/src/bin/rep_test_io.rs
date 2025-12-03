@@ -6,7 +6,7 @@ use std::{
     process::exit,
 };
 
-use haversine_generator::{rep_run, rep_tester::RepTester};
+use haversine_generator::{rep_run, rep_tester::RepTester, write::RawAlloc};
 
 struct TestFn<'a> {
     name: &'static str,
@@ -84,6 +84,20 @@ fn main() {
 
         rep_run!(
             rep_tester,
+            name = "File::read_to_string + malloc",
+            len = meta.len(),
+            before = {
+                let mut json = String::new();
+                let mut file = File::open(test_data_path).unwrap();
+            },
+            block = {
+                file.read_to_string(&mut json).unwrap();
+            },
+            check = { json.len() == meta.len() as usize },
+        );
+
+        rep_run!(
+            rep_tester,
             name = "File::read",
             len = meta.len(),
             before = {
@@ -98,16 +112,63 @@ fn main() {
 
         rep_run!(
             rep_tester,
-            name = "File::read_to_string + malloc",
+            name = "loop { File::read } + malloc (4K)",
             len = meta.len(),
             before = {
-                let mut json = String::new();
+                let json = RawAlloc::new(meta.len() as usize);
+                unsafe { libc::madvise(json.as_mut_ptr(), json.size(), libc::MADV_NOHUGEPAGE) };
+
                 let mut file = File::open(test_data_path).unwrap();
+                let buf = json.as_u8_slice_mut();
             },
             block = {
-                file.read_to_string(&mut json).unwrap();
+                let mut read = 0;
+                loop {
+                    let cur_read = file.read(&mut buf[read..]).unwrap();
+                    read += cur_read;
+                    if cur_read == 0 {
+                        break;
+                    }
+                }
             },
-            check = { json.len() == meta.len() as usize },
+            check = { buf.len() == meta.len() as usize },
+        );
+
+        rep_run!(
+            rep_tester,
+            name = "File::read_exact + malloc aligned",
+            len = meta.len(),
+            before = {
+                let json = RawAlloc::new(round_up_to_2mb(meta.len() as usize));
+
+                let mut file = File::open(test_data_path).unwrap();
+                let buf = &mut json.as_u8_slice_mut()[0..(meta.len() as usize)];
+            },
+            block = {
+                file.read_exact(buf).unwrap();
+            },
+            check = { buf[buf.len() - 2] != 0 },
+        );
+
+        rep_run!(
+            rep_tester,
+            name = "File::read_exact + malloc (auto)",
+            len = meta.len(),
+            before = {
+                let json = RawAlloc::new(meta.len() as usize);
+
+                let mut file = File::open(test_data_path).unwrap();
+                let buf = json.as_u8_slice_mut();
+            },
+            block = {
+                file.read_exact(buf).unwrap();
+            },
+            check = { buf.len() == meta.len() as usize },
         );
     }
+}
+
+fn round_up_to_2mb(x: usize) -> usize {
+    const TWO_MB: usize = 1 << 21;
+    (x + TWO_MB - 1) & !(TWO_MB - 1)
 }

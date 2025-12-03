@@ -1,6 +1,6 @@
 use std::{
     env::args,
-    io::{Write, stdout},
+    io::{stdout, Write},
 };
 
 use haversine_generator::{

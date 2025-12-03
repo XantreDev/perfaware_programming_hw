@@ -11,6 +11,10 @@ timing_mac_os_cycles = []
 timing_low_level = []
 timing_os = []
 
+[profile.release-d]
+inherits = "release"
+debug = true
+
 [[bin]]
 name = "generator"
 
