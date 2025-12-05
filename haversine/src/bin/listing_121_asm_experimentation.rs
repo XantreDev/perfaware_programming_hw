@@ -1,12 +1,13 @@
 use std::{arch::asm, env::args};
 
 use haversine_generator::{
-    rep_run,
+    core_affinity, rep_run,
     rep_tester::{self, RepTester},
     write::RawAlloc,
 };
 
 fn main() {
+    core_affinity::set_single_core().unwrap();
     let mut args = args();
     let pages: u32 = args.nth(1).unwrap().parse().unwrap();
     let page = 4 * 1024;
@@ -28,12 +29,12 @@ fn main() {
                 unsafe {
                     asm!(
                         r#"
-                        xor rax, rax
                         2:
-                        mov [{ptr} + rax], al
-                        inc rax
-                        cmp rax, {bound}
+                        mov [{ptr} + {c:r}], {c:l}
+                        inc {c:r}
+                        cmp {c:r}, {bound:r}
                         jb 2b"#,
+                        c = in(reg) 0,
                         ptr = in(reg) ptr,
                         bound = in(reg) bytes,
                         options(nostack)
@@ -44,18 +45,38 @@ fn main() {
 
         rep_run!(
             rep_tester,
+            name = "nop (aligned)",
+            len = bytes,
+            block = {
+                unsafe {
+                    asm!(
+                        r#"
+                        2:
+                        NOP DWORD ptr [EAX]
+                        inc {c:r}
+                        cmp {c:r}, {bound:r}
+                        jb 2b"#,
+                        c = in(reg) 0,
+                        bound = in(reg) bytes,
+                        options(nostack)
+                    );
+                }
+            },
+        );
+        rep_run!(
+            rep_tester,
             name = "nop",
             len = bytes,
             block = {
                 unsafe {
                     asm!(
                         r#"
-                        xor rax, rax
                         2:
-                        NOP DWORD ptr [EAX]
-                        inc rax
-                        cmp rax, {bound}
+                        .byte 0x0F, 0x1F, 0x00H
+                        inc {c:r}
+                        cmp {c:r}, {bound:r}
                         jb 2b"#,
+                        c = in(reg) 0,
                         bound = in(reg) bytes,
                         options(nostack)
                     );
@@ -71,11 +92,11 @@ fn main() {
                 unsafe {
                     asm!(
                         r#"
-                        xor rax, rax
                         2:
-                        inc rax
-                        cmp rax, {bound}
+                        inc {c:r}
+                        cmp {c:r}, {bound:r}
                         jb 2b"#,
+                        c = in(reg) 0,
                         bound = in(reg) bytes,
                         options(nostack)
                     );
@@ -92,8 +113,8 @@ fn main() {
                     asm!(
                         r#"
                         2:
-                        dec {i}
-                        cmp {i}, 0
+                        dec {i:r}
+                        cmp {i:r}, 0
                         jb 2b
                         "#,
                         i = in(reg) bytes - 1,
