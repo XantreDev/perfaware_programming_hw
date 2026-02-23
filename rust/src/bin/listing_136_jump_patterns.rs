@@ -1,4 +1,4 @@
-use std::{arch::asm, env::args, fs::File, hint::unreachable_unchecked, io, mem::MaybeUninit};
+use std::{arch::asm, env::args, hint::unreachable_unchecked, io};
 
 use haversine_generator::{core_affinity, rep_run, rep_tester::RepTester};
 

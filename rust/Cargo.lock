@@ -3,6 +3,10 @@
 version = 4
 
 [[package]]
+name = "asm"
+version = "0.1.0"
+
+[[package]]
 name = "bitflags"
 version = "2.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -57,6 +61,7 @@ dependencies = [
 name = "haversine_generator"
 version = "0.1.0"
 dependencies = [
+ "asm",
  "cc",
  "cfg-if",
  "insta",

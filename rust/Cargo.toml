@@ -24,6 +24,7 @@ rand = "0.9.1"
 rand_xoshiro = "0.7.0"
 cfg-if = "1.0"
 insta = "1.43.1"
+asm = { version = "0.1.0", path = "../crates/asm" }
 
 [build-dependencies]
 cc = "1"
