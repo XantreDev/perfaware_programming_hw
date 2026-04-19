@@ -5,7 +5,7 @@ section .text
 
 read_1:
     align 64
-.loop
+.loop:
     mov rax, [rsi]
     sub rdi, 1
     jnle .loop
@@ -14,7 +14,7 @@ read_1:
 
 read_2:
     align 64
-.loop
+.loop:
     mov rax, [rsi]
     mov rax, [rsi]
 
@@ -24,7 +24,7 @@ read_2:
 
 read_3:
     align 64
-.loop
+.loop:
     mov rax, [rsi]
     mov rax, [rsi]
     mov rax, [rsi]
@@ -36,7 +36,7 @@ read_3:
 
 read_4:
     align 64
-.loop
+.loop:
     mov rax, [rsi]
     mov rax, [rsi]
     mov rax, [rsi]
@@ -50,7 +50,7 @@ read_4:
 write_1:
     xor rax, rax
     align 64
-.loop
+.loop:
     mov [rsi], rax
 
     sub rdi, 1
@@ -60,7 +60,7 @@ write_1:
 write_2:
     xor rax, rax
     align 64
-.loop
+.loop:
     mov [rsi], rax
     mov [rdx], rax
 
@@ -71,7 +71,7 @@ write_2:
 write_3:
     xor rax, rax
     align 64
-.loop
+.loop:
     mov [rsi], rax
     mov [rdx], rax
     mov [rcx], rax
@@ -83,7 +83,7 @@ write_3:
 write_4:
     xor rax, rax
     align 64
-.loop
+.loop:
     mov [rsi], rax
     mov [rdx], rax
     mov [rcx], rax
@@ -95,7 +95,7 @@ write_4:
 
 read_1x2:
     align 64
-.loop
+.loop:
     mov al, [rsi]
     mov al, [rsi]
 
@@ -106,7 +106,7 @@ read_1x2:
 
 read_8x2:
     align 64
-.loop
+.loop:
     mov rax, [rsi]
     mov rax, [rsi]
 

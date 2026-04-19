@@ -1,0 +1,14 @@
+default:
+    @just --list
+
+read_lines:
+    nu ./scripts.nu run listing_141_load_store_ports load 100_000_000
+
+read_simd_throughput:
+    nu ./scripts.nu run-precise default,precise_rep_test listing_142_simd load_width 100_000_000
+
+read_simd_lines:
+    nu ./scripts.nu run-precise listing_142_simd load_lines 100_000_000
+
+write_simd_lines:
+    nu ./scripts.nu run-precise listing_142_simd write_lines 100_000_000

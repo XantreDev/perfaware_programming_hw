@@ -37,7 +37,7 @@ fn main() {
         .parse()
         .expect("the second arg must be amount of loops");
     assert!(op == "load" || op == "anomaly" || op == "store");
-    assert!(loops > 0 && loops < 50_000_000);
+    assert!(loops > 0 && loops <= 100_000_000);
 
     core_affinity::set_single_core().unwrap();
     let mut tester = RepTester::new().unwrap();
