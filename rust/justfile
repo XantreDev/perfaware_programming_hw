@@ -12,3 +12,6 @@ read_simd_lines:
 
 write_simd_lines:
     nu ./scripts.nu run-precise listing_142_simd write_lines 100_000_000
+
+cache_size:
+    nu ./scripts.nu run-precise listing_143_cache_size
