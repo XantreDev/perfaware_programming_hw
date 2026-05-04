@@ -1,5 +1,6 @@
 use std::{
     io::{self, Stdout, Write, stdout},
+    string,
     time::Duration,
     u64,
 };
@@ -32,7 +33,7 @@ type RunVector = [u64; VEC_SIZE];
 type RunVectorF64 = [f64; VEC_SIZE];
 
 struct RepRun {
-    name: &'static str,
+    name: Option<String>,
     bytes: u64,
     runs: u64,
     start: RunVector,
@@ -65,12 +66,11 @@ pub fn page_faults() -> u64 {
     }
 }
 
-static EMPTY: &'static str = "";
 impl RepRun {
     #[inline(always)]
     fn empty() -> RepRun {
         RepRun {
-            name: EMPTY,
+            name: None,
             bytes: 0,
             runs: 0,
 
@@ -84,7 +84,7 @@ impl RepRun {
 
     #[inline(always)]
     fn clear(&mut self) {
-        self.name = EMPTY;
+        self.name = None;
         self.bytes = 0;
         self.runs = 0;
 
@@ -108,6 +108,8 @@ pub struct RepTester {
 
     run: RepRun,
 }
+
+const EMPTY: &'static str = "";
 
 impl RepTester {
     const INIT: u64 = 0;
@@ -136,13 +138,13 @@ impl RepTester {
         }
     }
 
-    pub fn init(&mut self, name: &'static str, bytes: u64, timeout_sec: f64) {
+    pub fn init(&mut self, name: &str, bytes: u64, timeout_sec: f64) {
         let freq = self
             .measurer
             .detect_clock_frequency(Duration::from_millis(100));
         match self.status {
             Status::Uninit => {
-                self.run.name = name;
+                self.run.name = Some(name.to_owned());
                 self.run.bytes = bytes;
                 self.status = Status::Testing;
                 self.error_message = None;
@@ -236,9 +238,10 @@ impl RepTester {
         match self.status {
             Status::Finished => {
                 let mut out = stdout();
+                let name = self.run.name.as_ref().expect("must have a name");
 
                 if self.counter == 0 {
-                    print_header(&mut out, self.run.name).unwrap();
+                    print_header(&mut out, name).unwrap();
                     self.counter = 1;
                 } else {
                     out.write("\x1b[1A\x1b[2K".as_bytes()).unwrap();
@@ -274,8 +277,9 @@ impl RepTester {
             Status::Testing => {
                 self.counter += 1;
                 let mut out = stdout();
+                let name = self.run.name.as_ref().expect("must have a name");
                 if self.counter == 1 {
-                    print_header(&mut out, self.run.name).unwrap();
+                    print_header(&mut out, name).unwrap();
                 } else {
                     out.write("\x1b[1A\x1b[2K".as_bytes()).unwrap();
                 }
@@ -311,7 +315,7 @@ impl RepTester {
     }
 }
 
-fn print_header(out: &mut Stdout, name: &'static str) -> io::Result<()> {
+fn print_header(out: &mut Stdout, name: &str) -> io::Result<()> {
     writeln!(out, "--- {} ---", name)
 }
 
