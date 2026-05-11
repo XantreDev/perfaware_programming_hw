@@ -31,7 +31,7 @@ fn main() {
         Listing::make("src/listing_141_load_store_ports.asm", "memports"),
         Listing::make("src/listing_142_simd.asm", "simdops"),
         Listing::make("src/listing_143_cache_size.asm", "cache"),
-        Listing::make("src/listing_144_non_power_of_two", "nonbincache"),
+        Listing::make("src/listing_144_non_power_of_two.asm", "nonbincache"),
     ];
 
     for item in listings {

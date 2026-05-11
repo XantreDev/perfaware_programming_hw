@@ -1,33 +1,32 @@
 bits 64
 
 section .text:
-    global test_cache
+    global test_cache_non_bin
 
-; (iterations: rdi, inner_iterations: rsi, ptr: rdx)
-test_cache:
+; (iterations: rdi, inner_reads: rsi, ptr: rdx)
+test_cache_non_bin:
+    ; we SIGSEGV here for some reason xD
+    ret
     xor rax, rax
 
     align 64
 .outer
     xor rbx, rbx
+    mov rcx, rdx
 
-    ; 256b
+    ; 128b
     .inner
-        vmovqa ymm0, [rdx + 0x00]
-        vmovqa ymm0, [rdx + 0x20]
-        vmovqa ymm0, [rdx + 0x40]
-        vmovqa ymm0, [rdx + 0x60]
-        vmovqa ymm0, [rdx + 0x80]
-        vmovqa ymm0, [rdx + 0xa0]
-        vmovqa ymm0, [rdx + 0xc0]
-        vmovqa ymm0, [rdx + 0xe0]
+        ;vmovdqa ymm0, [rcx + 0x00]
+        ;vmovdqa ymm0, [rcx + 0x20]
+        ;vmovdqa ymm0, [rcx + 0x40]
+        ;vmovdqa ymm0, [rcx + 0x60]
 
-        add rdx, 0x100
+        add rcx, 0x80
         add rbx, 1
         cmp rsi, rbx
-        jnz .inner
+        jnle .inner
 
-   add rax, 1
-   cmp rdi, rax
-   jnz .outer
-   ret
+    add rax, 1
+    cmp rdi, rax
+    jnle .outer
+    ret
