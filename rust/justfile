@@ -12,3 +12,12 @@ read_simd_lines:
 
 write_simd_lines:
     nu ./scripts.nu run-precise listing_142_simd write_lines 100_000_000
+
+cache_size:
+    nu ./scripts.nu run-precise listing_143_cache_size
+
+cache_size_non_bin:
+    nu ./scripts.nu run-precise listing_144_non_power_of_two
+
+cache_size_non_bin_dbg:
+    nu ./scripts.nu build-with-features-d listing_144_non_power_of_two
