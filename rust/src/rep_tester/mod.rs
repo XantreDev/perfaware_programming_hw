@@ -4,7 +4,7 @@ use std::{
     u64,
 };
 
-use crate::{pretty_print, pretty_print_u64, pretty_print_with_options, time::TimeMeasurer};
+use crate::{pretty_print_with_options, time::TimeMeasurer};
 
 #[derive(Debug)]
 enum Status {
@@ -32,7 +32,7 @@ type RunVector = [u64; VEC_SIZE];
 type RunVectorF64 = [f64; VEC_SIZE];
 
 struct RepRun {
-    name: &'static str,
+    name: Option<String>,
     bytes: u64,
     runs: u64,
     start: RunVector,
@@ -65,12 +65,11 @@ pub fn page_faults() -> u64 {
     }
 }
 
-static EMPTY: &'static str = "";
 impl RepRun {
     #[inline(always)]
     fn empty() -> RepRun {
         RepRun {
-            name: EMPTY,
+            name: None,
             bytes: 0,
             runs: 0,
 
@@ -84,7 +83,7 @@ impl RepRun {
 
     #[inline(always)]
     fn clear(&mut self) {
-        self.name = EMPTY;
+        self.name = None;
         self.bytes = 0;
         self.runs = 0;
 
@@ -107,7 +106,16 @@ pub struct RepTester {
     counter: u32,
 
     run: RepRun,
+    pub print: bool,
 }
+
+pub enum MeasurementKind {
+    Best,
+    Worst,
+    Avg,
+}
+
+const EMPTY: &'static str = "";
 
 impl RepTester {
     const INIT: u64 = 0;
@@ -123,6 +131,7 @@ impl RepTester {
             timeout: RepTester::INIT,
             timer_frequency: RepTester::INIT,
             try_before: RepTester::INIT,
+            print: true,
         })
     }
     #[inline]
@@ -136,13 +145,13 @@ impl RepTester {
         }
     }
 
-    pub fn init(&mut self, name: &'static str, bytes: u64, timeout_sec: f64) {
+    pub fn init(&mut self, name: &str, bytes: u64, timeout_sec: f64) {
         let freq = self
             .measurer
             .detect_clock_frequency(Duration::from_millis(100));
         match self.status {
             Status::Uninit => {
-                self.run.name = name;
+                self.run.name = Some(name.to_owned());
                 self.run.bytes = bytes;
                 self.status = Status::Testing;
                 self.error_message = None;
@@ -232,13 +241,32 @@ impl RepTester {
         }
     }
 
+    pub fn measurement(&self, kind: MeasurementKind) -> PeformanceMeasurement {
+        match kind {
+            MeasurementKind::Avg => {
+                PeformanceMeasurement::new(self.run.avg, self.timer_frequency, self.run.bytes)
+            }
+            MeasurementKind::Best => PeformanceMeasurement::new(
+                to_run_vector_f64(&self.run.min),
+                self.timer_frequency,
+                self.run.bytes,
+            ),
+            MeasurementKind::Worst => PeformanceMeasurement::new(
+                to_run_vector_f64(&self.run.max),
+                self.timer_frequency,
+                self.run.bytes,
+            ),
+        }
+    }
+
     pub fn print(&mut self) {
         match self.status {
             Status::Finished => {
                 let mut out = stdout();
+                let name = self.run.name.as_ref().expect("must have a name");
 
                 if self.counter == 0 {
-                    print_header(&mut out, self.run.name).unwrap();
+                    print_header(&mut out, name).unwrap();
                     self.counter = 1;
                 } else {
                     out.write("\x1b[1A\x1b[2K".as_bytes()).unwrap();
@@ -247,17 +275,9 @@ impl RepTester {
                 write!(
                     out,
                     "The best run: {}\nThe worst run: {}\nAverage: {}\n\n",
-                    performance_measurement(
-                        to_run_vector_f64(&self.run.min),
-                        self.timer_frequency,
-                        self.run.bytes
-                    ),
-                    performance_measurement(
-                        to_run_vector_f64(&self.run.max),
-                        self.timer_frequency,
-                        self.run.bytes
-                    ),
-                    performance_measurement(self.run.avg, self.timer_frequency, self.run.bytes)
+                    self.measurement(MeasurementKind::Best).to_string(),
+                    self.measurement(MeasurementKind::Worst).to_string(),
+                    self.measurement(MeasurementKind::Avg).to_string(),
                 )
                 .unwrap();
                 out.flush().unwrap();
@@ -274,8 +294,9 @@ impl RepTester {
             Status::Testing => {
                 self.counter += 1;
                 let mut out = stdout();
+                let name = self.run.name.as_ref().expect("must have a name");
                 if self.counter == 1 {
-                    print_header(&mut out, self.run.name).unwrap();
+                    print_header(&mut out, name).unwrap();
                 } else {
                     out.write("\x1b[1A\x1b[2K".as_bytes()).unwrap();
                 }
@@ -283,11 +304,7 @@ impl RepTester {
                 writeln!(
                     out,
                     "The best run: {}",
-                    performance_measurement(
-                        to_run_vector_f64(&self.run.min),
-                        self.timer_frequency,
-                        self.run.bytes
-                    ),
+                    self.measurement(MeasurementKind::Best).to_string()
                 )
                 .unwrap();
                 out.flush().unwrap();
@@ -311,7 +328,7 @@ impl RepTester {
     }
 }
 
-fn print_header(out: &mut Stdout, name: &'static str) -> io::Result<()> {
+fn print_header(out: &mut Stdout, name: &str) -> io::Result<()> {
     writeln!(out, "--- {} ---", name)
 }
 
@@ -319,45 +336,87 @@ fn to_run_vector_f64(vector: &RunVector) -> RunVectorF64 {
     vector.map(|it| it as f64)
 }
 
-fn performance_measurement(counts: RunVectorF64, timer_frequency: u64, bytes: u64) -> String {
-    let clocks = counts[VectorItem::Clocks.value()];
-    if bytes == 0 || clocks == 0.0 {
-        return String::new();
+pub struct PeformanceMeasurement {
+    pub bytes: u64,
+    pub time: f64,
+    pub faults: f64,
+    pub clocks: f64,
+}
+
+impl PeformanceMeasurement {
+    #[inline]
+    pub fn throughput_mb(&self) -> f64 {
+        if self.time == 0.0 {
+            return 0.0;
+        }
+
+        return (self.bytes as f64 / self.time) / (1024.0 * 1024.0);
     }
+    pub fn to_string(&self) -> String {
+        let clocks = self.clocks;
+        let bytes = self.bytes;
 
-    let time = clocks as f64 / timer_frequency as f64;
-    let throughput = (bytes as f64 / time) / (1024.0 * 1024.0);
+        if bytes == 0 || clocks == 0.0 && self.time == 0.0 {
+            return String::new();
+        }
 
-    let page_faults = if counts[VectorItem::PageFaults.value()] > 0.0 {
-        let faults = counts[VectorItem::PageFaults.value()];
-        let mut pf_per_byte = bytes as f64 / faults;
-        let unit = if pf_per_byte > 1024.0 * 1024.0 {
-            pf_per_byte /= 1024.0 * 1024.0;
-            "m"
-        } else if pf_per_byte > 1024.0 {
-            pf_per_byte /= 1024.0;
-            "k"
+        let faults = self.faults;
+        let page_faults = if faults > 0.0 {
+            let mut pf_per_byte = bytes as f64 / faults;
+            let unit = if pf_per_byte > 1024.0 * 1024.0 {
+                pf_per_byte /= 1024.0 * 1024.0;
+                "m"
+            } else if pf_per_byte > 1024.0 {
+                pf_per_byte /= 1024.0;
+                "k"
+            } else {
+                "b"
+            };
+
+            format!(
+                "; PF={} ({}{}/fault)",
+                pretty_print_with_options(faults, 3),
+                pretty_print_with_options(pf_per_byte, 3),
+                unit
+            )
         } else {
-            "b"
+            String::new()
         };
+        let throughput = (bytes as f64 / self.time) / (1024.0 * 1024.0);
 
         format!(
-            "; PF={} ({}{}/fault)",
-            pretty_print_with_options(faults, 3),
-            pretty_print_with_options(pf_per_byte, 3),
-            unit
+            "{}({:.2} ms) {:.3} mb/s{}",
+            pretty_print_with_options(clocks, 3),
+            self.time * 1000.0,
+            throughput,
+            page_faults
         )
-    } else {
-        String::new()
-    };
+    }
 
-    format!(
-        "{}({:.2} ms) {:.3} mb/s{}",
-        pretty_print_with_options(clocks, 3),
-        time * 1000.0,
-        throughput,
-        page_faults
-    )
+    fn new(counts: RunVectorF64, timer_frequency: u64, bytes: u64) -> PeformanceMeasurement {
+        let clocks = counts[VectorItem::Clocks.value()];
+        if bytes == 0 || clocks == 0.0 {
+            return PeformanceMeasurement::nil();
+        }
+
+        let time = clocks as f64 / timer_frequency as f64;
+        let page_faults = counts[VectorItem::PageFaults.value()];
+
+        return PeformanceMeasurement {
+            bytes,
+            time,
+            faults: page_faults,
+            clocks,
+        };
+    }
+    fn nil() -> PeformanceMeasurement {
+        PeformanceMeasurement {
+            bytes: 0,
+            time: 0.0,
+            faults: 0.0,
+            clocks: 0.0,
+        }
+    }
 }
 
 #[macro_export]
@@ -368,6 +427,7 @@ macro_rules! rep_run {
         const TIMEOUT: f64 = 10.0;
         #[cfg(not(feature = "precise_rep_test"))]
         const TIMEOUT: f64 = 3.0;
+        $rep_tester.clear();
         $rep_tester.init($name, len as u64, TIMEOUT);
 
         while $rep_tester.should_continue() {
@@ -380,13 +440,16 @@ macro_rules! rep_run {
                 $rep_tester.error("didn't pass validity check");
             }
 
-            $rep_tester.print();
+            if $rep_tester.print {
+                $rep_tester.print();
+            }
 
             $($after)*
         }
 
-        $rep_tester.print();
-        $rep_tester.clear();
+        if $rep_tester.print {
+            $rep_tester.print();
+        }
     }};
 
     ($rep_tester: expr, name = $name:expr, len=$len:expr, block = {$($block:tt)*} $(,)?) => {

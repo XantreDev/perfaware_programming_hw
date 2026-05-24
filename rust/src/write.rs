@@ -50,6 +50,10 @@ impl RawAlloc {
         self.0 as *const u8
     }
 
+    pub fn as_u8_mut_ptr(&self) -> *mut u8 {
+        self.0 as *mut u8
+    }
+
     pub fn as_u8_slice_mut<'a>(&'a self) -> &'a mut [u8] {
         unsafe { std::slice::from_raw_parts_mut(self.0 as *mut u8, self.1) }
     }
