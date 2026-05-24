@@ -17,7 +17,7 @@ cache_size:
     nu ./scripts.nu run-precise listing_143_cache_size
 
 cache_size_non_bin:
-    nu ./scripts.nu run-precise listing_144_non_power_of_two
+    nu ./scripts.nu run-precise listing_144_non_power_of_two info
 
-cache_size_non_bin_dbg:
-    nu ./scripts.nu build-with-features-d listing_144_non_power_of_two
+cache_size_non_bin_csv:
+    nu ./scripts.nu run-precise listing_144_non_power_of_two csv > ./cache.csv
