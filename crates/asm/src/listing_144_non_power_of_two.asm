@@ -13,10 +13,10 @@ test_cache_non_bin:
 
     ; 128b
     .inner
-        vmovdqa ymm0, [rcx + 0x00]
-        vmovdqa ymm0, [rcx + 0x20]
-        vmovdqa ymm0, [rcx + 0x40]
-        vmovdqa ymm0, [rcx + 0x60]
+        vmovdqu ymm0, [rcx + 0x00]
+        vmovdqu ymm0, [rcx + 0x20]
+        vmovdqu ymm0, [rcx + 0x40]
+        vmovdqu ymm0, [rcx + 0x60]
 
         add rcx, 0x80
         sub rax, 1
