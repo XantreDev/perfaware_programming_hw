@@ -1,4 +1,5 @@
 use std::{
+    default,
     io::{self, Stdout, Write, stdout},
     time::Duration,
     u64,
@@ -241,17 +242,17 @@ impl RepTester {
         }
     }
 
-    pub fn measurement(&self, kind: MeasurementKind) -> PeformanceMeasurement {
+    pub fn measurement(&self, kind: MeasurementKind) -> PerformanceMeasurement {
         match kind {
             MeasurementKind::Avg => {
-                PeformanceMeasurement::new(self.run.avg, self.timer_frequency, self.run.bytes)
+                PerformanceMeasurement::new(self.run.avg, self.timer_frequency, self.run.bytes)
             }
-            MeasurementKind::Best => PeformanceMeasurement::new(
+            MeasurementKind::Best => PerformanceMeasurement::new(
                 to_run_vector_f64(&self.run.min),
                 self.timer_frequency,
                 self.run.bytes,
             ),
-            MeasurementKind::Worst => PeformanceMeasurement::new(
+            MeasurementKind::Worst => PerformanceMeasurement::new(
                 to_run_vector_f64(&self.run.max),
                 self.timer_frequency,
                 self.run.bytes,
@@ -336,14 +337,15 @@ fn to_run_vector_f64(vector: &RunVector) -> RunVectorF64 {
     vector.map(|it| it as f64)
 }
 
-pub struct PeformanceMeasurement {
+#[derive(Default, Clone, Copy)]
+pub struct PerformanceMeasurement {
     pub bytes: u64,
     pub time: f64,
     pub faults: f64,
     pub clocks: f64,
 }
 
-impl PeformanceMeasurement {
+impl PerformanceMeasurement {
     #[inline]
     pub fn throughput_mb(&self) -> f64 {
         if self.time == 0.0 {
@@ -393,24 +395,24 @@ impl PeformanceMeasurement {
         )
     }
 
-    fn new(counts: RunVectorF64, timer_frequency: u64, bytes: u64) -> PeformanceMeasurement {
+    fn new(counts: RunVectorF64, timer_frequency: u64, bytes: u64) -> PerformanceMeasurement {
         let clocks = counts[VectorItem::Clocks.value()];
         if bytes == 0 || clocks == 0.0 {
-            return PeformanceMeasurement::nil();
+            return PerformanceMeasurement::nil();
         }
 
         let time = clocks as f64 / timer_frequency as f64;
         let page_faults = counts[VectorItem::PageFaults.value()];
 
-        return PeformanceMeasurement {
+        return PerformanceMeasurement {
             bytes,
             time,
             faults: page_faults,
             clocks,
         };
     }
-    fn nil() -> PeformanceMeasurement {
-        PeformanceMeasurement {
+    fn nil() -> PerformanceMeasurement {
+        PerformanceMeasurement {
             bytes: 0,
             time: 0.0,
             faults: 0.0,
