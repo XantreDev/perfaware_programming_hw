@@ -1,4 +1,4 @@
-use std::env::args;
+use std::{env::args, io::stdout, os};
 
 use haversine_generator::{
     core_affinity, rep_run,
@@ -79,5 +79,26 @@ fn main() {
         let collected = rep_tester.measurement(MeasurementKind::Best);
 
         loads_measurements[idx] = collected;
+    }
+
+    let basis = loads_measurements[0].throughput_mb();
+    let mut buf = String::with_capacity(1024);
+    use std::fmt::Write;
+    writeln!(buf, "Misalign bytes,Performance,Fraction from basis").unwrap();
+    for i in 0..misalign_loads.len() {
+        let current = loads_measurements[i].throughput_mb();
+        writeln!(
+            buf,
+            "{},{},{}",
+            misalign_loads[i].misalignment,
+            current,
+            current / basis
+        )
+        .unwrap();
+    }
+
+    {
+        use std::io::Write;
+        write!(stdout(), "{}", buf).unwrap();
     }
 }

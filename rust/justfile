@@ -23,13 +23,10 @@ cache_size_non_bin_csv:
     nu ./scripts.nu run-precise listing_144_non_power_of_two csv > ./cache.csv
 
 aligned_vs_unaligned_synt:
-    nu ./scripts.nu run-precise listing_145_aligned_vs_unaligned 100_000_000 synthetic print
-
-aligned_vs_unaligned_l1:
-    nu ./scripts.nu run-precise listing_145_aligned_vs_unaligned 32_768 real print
+    nu ./scripts.nu run-precise listing_145_aligned_vs_unaligned 100_000_000 synthetic csv > aligned_vs_unaligned_synt.csv
 
 aligned_vs_unaligned_l2:
-    nu ./scripts.nu run-precise listing_145_aligned_vs_unaligned 262_144 real print
+    nu ./scripts.nu run-precise listing_145_aligned_vs_unaligned 262_144 real csv > aligned_vs_unaligned_l2.csv
 
 aligned_vs_unaligned_l3:
-    nu ./scripts.nu run-precise listing_145_aligned_vs_unaligned 1_048_576 real print
+    nu ./scripts.nu run-precise listing_145_aligned_vs_unaligned 1_048_576 real csv > aligned_vs_unaligned_l3.csv
