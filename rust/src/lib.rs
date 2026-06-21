@@ -1,4 +1,4 @@
-use std::usize;
+use std::{fmt::Debug, str::FromStr, usize};
 
 pub struct Point {
     pub x: f64,
@@ -95,4 +95,19 @@ fn pretty_print_test() {
     assert_eq!(pretty_print(100.5234), "100.523_4");
     assert_eq!(pretty_print(123_001_100.5234), "123_001_100.523_4");
     assert_eq!(pretty_print(1_001_100.523014), "1_001_100.523_014");
+}
+
+pub trait IntParsableStr {
+    fn parse_int<T: FromStr>(&self, message: &'static str) -> T
+    where
+        T::Err: Debug;
+}
+
+impl IntParsableStr for String {
+    fn parse_int<T: FromStr>(&self, message: &'static str) -> T
+    where
+        T::Err: Debug,
+    {
+        self.replace("_", "").parse::<T>().expect(message)
+    }
 }

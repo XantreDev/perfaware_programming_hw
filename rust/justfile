@@ -33,3 +33,6 @@ aligned_vs_unaligned_l3:
 
 aligned_vs_unaligned_main:
     nu ./scripts.nu run-precise listing_145_aligned_vs_unaligned 128_777_216 real print
+
+nuke_l1:
+    nu ./scripts.nu run-precise listing_146_nuke_cache 1_048_576
