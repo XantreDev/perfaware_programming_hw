@@ -3,7 +3,6 @@ bits 64
 section .text
     global test_cache_non_bin
 
-
 ; (iterations: rdi, inner_reads: rsi, ptr: rdx)
 test_cache_non_bin:
     align 64
