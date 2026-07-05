@@ -1,51 +1,65 @@
 bits 64
 
-section .text
-    global baseline_fill, non_temporal_fill
-
 section .data
     msg db "Assertion failed: must be dividable by 128", 10
     msg_len equ $ - msg
 
-.assert_failed:
-    mov eax, 4 ; sys_write sys call ID
-    mov ebx, 2 ; fd - stderr
-    mov ecx, msg
+section .text
+    global baseline_fill, non_temporal_fill
+
+assert_failed:
+    ; write(2, msg, msg_len)
+    mov eax, 1              ; sys_write
+    mov edi, 2              ; stderr
+    lea rsi, [rel msg]
     mov edx, msg_len
-    int 0x00 ; kernel interupt
+    syscall
 
-    mov eax, 1 ; sys_exit
-    mov ebx, 1 ; exit code
-    int 0x80
+    ; exit(1)
+    mov eax, 60             ; sys_exit
+    mov edi, 1
+    syscall
 
-; (len: rbx, src_ptr: rsi, repeats: rdx, dst_ptr: rcx)
+; (len: rdi, src_ptr: rsi, repeats: rdx, dst_ptr: rcx)
+non_temporal_fill:
+    ret
+
+; (len: rdi, src_ptr: rsi, repeats: rdx, dst_ptr: rcx)
 baseline_fill:
-    xor r8, r8
+    ; let len_cp
+    mov r8, rdi
+    mov r9, rdi
+    cmp r9, 0
 
-    mov r9, rbx
-    or  r9, 0b0111_1111
-    jz .assert_failed
-    mov len
+    and r9, 0b0111_1111
+    jnz .fail
+    cmp r8, 0
+    je .fail
 
+.fail:
+    call assert_failed
+.ok:
     align 64
 .loop:
-    ; mov rbx, rbx
-    movdqa ymm0, [rsi]
-    movdqa ymm1, [rsi + 32]
-    movdqa ymm2, [rsi + 64]
-    movdqa ymm3, [rsi + 96]
+    vmovdqa ymm0, [rsi]
+    vmovdqa ymm1, [rsi + 32]
+    vmovdqa ymm2, [rsi + 64]
+    vmovdqa ymm3, [rsi + 96]
 
-    mov r12, rcx
-    mov r13, rdx ; let counter = repeates
+    mov r10, rcx ; let dst_ptr_cp = dst
+    mov r11, rdx ; let counter = repeates
     .inner:
-        movdqa [r12], ymm0
-        movdqa [r12 + 32], ymm1
-        movdqa [r12 + 64], ymm2
-        movdqa [r12 + 96], ymm3
-        add r12, rbx
-        sub r13, 128
+        vmovdqa [r10], ymm0
+        vmovdqa [r10 + 32], ymm1
+        vmovdqa [r10 + 64], ymm2
+        vmovdqa [r10 + 96], ymm3
+        add r10, rdi
+        sub r11, 1
         jnz .inner
 
     add rsi, 128
-    sub r9, 128
+    add rcx, 128
+    sub r8, 128
+
     jnz .loop
+    ret

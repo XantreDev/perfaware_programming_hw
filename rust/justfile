@@ -36,3 +36,6 @@ aligned_vs_unaligned_main:
 
 nuke_l1:
     nu ./scripts.nu run-precise listing_146_nuke_cache 1_048_576
+
+non_temporal:
+    nu ./scripts.nu run-precise listing_147_non_temporal_store
