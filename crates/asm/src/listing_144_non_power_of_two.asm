@@ -6,12 +6,12 @@ section .text
 ; (iterations: rdi, inner_reads: rsi, ptr: rdx)
 test_cache_non_bin:
     align 64
-.outer
+.outer:
     mov rax, rsi
     mov rcx, rdx
 
     ; 128b
-    .inner
+    .inner:
         vmovdqu ymm0, [rcx + 0x00]
         vmovdqu ymm0, [rcx + 0x20]
         vmovdqu ymm0, [rcx + 0x40]

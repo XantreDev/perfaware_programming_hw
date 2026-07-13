@@ -33,6 +33,7 @@ fn main() {
         Listing::make("src/listing_143_cache_size.asm", "cache"),
         Listing::make("src/listing_144_non_power_of_two.asm", "nonbincachetest"),
         Listing::make("src/listing_146_nuke_cache.asm", "nukecache"),
+        Listing::make("src/listing_147_non_temporal_store.asm", "nontempstore"),
     ];
 
     for item in listings {

@@ -8,7 +8,7 @@ test_cache:
     xor rax, rax
     mov rcx, rdx
     align 64
-.loop
+.loop:
     vmovdqa ymm0, [rcx]
     vmovdqa ymm0, [rcx + 32]
     vmovdqa ymm0, [rcx + 64]
