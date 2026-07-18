@@ -4,5 +4,6 @@ pub mod load_store_ports;
 pub mod non_bin_cache;
 pub mod non_temporal_store;
 pub mod nuke_cache;
+pub mod prefetching;
 pub mod simd;
 mod stubs;

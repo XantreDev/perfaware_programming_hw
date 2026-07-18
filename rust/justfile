@@ -39,3 +39,6 @@ nuke_l1:
 
 non_temporal:
     nu ./scripts.nu run-precise listing_147_non_temporal_store
+
+prefetching:
+    nu ./scripts.nu run-precise listing_148_prefetching

@@ -12,35 +12,44 @@ trait ExpectedOk {
 }
 
 struct Listing {
-    path: &'static str,
-    name: &'static str,
+    path: String,
+    name: String,
 }
 impl Listing {
-    fn make(path: &'static str, name: &'static str) -> Listing {
+    fn make(path: String, name: String) -> Listing {
         Listing { path, name }
     }
 }
 
 #[cfg(unix)]
 fn main() {
-    use std::env;
+    use std::path::Path;
     use std::process::Command;
+    use std::{env, fs};
 
-    let listings = [
-        Listing::make("src/listing_139_code_alignment.asm", "align"),
-        Listing::make("src/listing_141_load_store_ports.asm", "memports"),
-        Listing::make("src/listing_142_simd.asm", "simdops"),
-        Listing::make("src/listing_143_cache_size.asm", "cache"),
-        Listing::make("src/listing_144_non_power_of_two.asm", "nonbincachetest"),
-        Listing::make("src/listing_146_nuke_cache.asm", "nukecache"),
-        Listing::make("src/listing_147_non_temporal_store.asm", "nontempstore"),
-    ];
+    let mut listings = Vec::with_capacity(64);
+    for item in fs::read_dir(Path::new("src")).unwrap() {
+        use std::ffi::OsStr;
+
+        let unwrapped_path = item.unwrap().path();
+        if unwrapped_path.is_file() && unwrapped_path.extension() == Some(OsStr::new("asm")) {
+            let file_name = unwrapped_path.file_name().unwrap();
+            let str_file_name = file_name.to_str().unwrap();
+            let ext_idx = str_file_name.find(".").expect("must have extension");
+            let name = str_file_name[0..ext_idx].replace("_", "");
+
+            listings.push(Listing {
+                name,
+                path: unwrapped_path.to_str().unwrap().to_string(),
+            })
+        }
+    }
 
     for item in listings {
         use std::path::Path;
 
         let listing_path = item.path;
-        let filename = Path::new(listing_path)
+        let filename = Path::new(&listing_path)
             .file_name()
             .expect("must be valid")
             .to_str()
