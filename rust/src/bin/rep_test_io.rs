@@ -1,24 +1,11 @@
-use std::{
-    fs::{self, File},
-    io::Read,
-    mem::MaybeUninit,
-    path::Path,
-    process::exit,
-};
+use std::{fs::File, io::Read, mem::MaybeUninit, path::Path, process::exit};
 
-use haversine_generator::{rep_run, rep_tester::RepTester, write::RawAlloc};
-
-struct TestFn<'a> {
-    name: &'static str,
-    args: &'a String,
-    exepcted_size: u64,
-    out: String,
-    block: &'a dyn Fn(&String) -> String,
-}
+use haversine_generator::{core_affinity, rep_run, rep_tester::RepTester, write::RawAlloc};
 
 fn main() {
     use std::env;
 
+    core_affinity::set_single_core().unwrap();
     let mut args = env::args();
     if args.len() < 2 {
         println!("possible args [test_data.json]");

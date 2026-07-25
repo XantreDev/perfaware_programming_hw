@@ -42,3 +42,6 @@ non_temporal:
 
 prefetching:
     nu ./scripts.nu run-precise listing_148_prefetching
+
+io:
+    nu ./scripts.nu run-precise rep_test_io ./test_parser.json
