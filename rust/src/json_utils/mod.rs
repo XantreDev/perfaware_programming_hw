@@ -1,11 +1,8 @@
-use crate::{labels::Labels, with_label};
+use crate::{json_parser::parse_json_from_slice, labels::Labels, with_label};
 
 use super::{
     Point, PointPair,
-    json_parser::{
-        ast::{Ast, KeyValuePair},
-        parse_json,
-    },
+    json_parser::ast::{Ast, KeyValuePair},
 };
 
 pub trait AstIterTools {
@@ -50,11 +47,11 @@ impl AstIterTools for Ast {
     }
 }
 
-pub fn prepare_data(json: String) -> JsonData {
+pub fn prepare_data_from_slice(json: &[u8]) -> JsonData {
     with_label! {
         Labels::JsonParse where bytes=json.len() =>
 
-        let result = parse_json(json).unwrap();
+        let result = parse_json_from_slice(json).unwrap();
     }
 
     with_label! {
@@ -83,6 +80,10 @@ pub fn prepare_data(json: String) -> JsonData {
         drop(result);
     };
     JsonData { pairs }
+}
+
+pub fn prepare_data(json: String) -> JsonData {
+    prepare_data_from_slice(json.as_bytes())
 }
 
 pub struct JsonData {

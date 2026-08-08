@@ -52,18 +52,26 @@ fn main() {
 
         with_label! {
             Labels::PreIO =>
-            let file = File::open(test_data_path)
+            let mut file = File::open(test_data_path)
                 .unwrap();
             let meta = file.metadata().unwrap();
         }
 
         with_label! {
             Labels::IO where bytes=meta.size() =>
-            let buf = RawAlloc::new((meta.size() + 1) as usize);
-            let json = fs::read_to_string(test_data_path).unwrap();
+            // wtf? raw mmap 2x faster
+            let buf = RawAlloc::new((meta.size()) as usize);
+            let json = buf.as_u8_slice_mut();
+            file.read_exact(json).unwrap();
+            // let mut vec: Vec<u8> = Vec::with_capacity(meta.size() as usize);
+            // let arr = unsafe {
+            //    vec.spare_capacity_mut().assume_init_mut()
+            // };
+            // file.read_exact(arr).unwrap();
+            // let json = arr;
         };
 
-        let json_data = json_utils::prepare_data(json);
+        let json_data = json_utils::prepare_data_from_slice(json);
 
         let pairs_amount = json_data.pairs.len();
         with_label! {

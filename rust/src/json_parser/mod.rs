@@ -6,6 +6,14 @@ use self::{
     lexer::Lexer,
 };
 
+pub fn parse_json_from_slice(json: &[u8]) -> Result<Ast, ParseError> {
+    let mut iter = Lexer::from_slice(&json).peekable();
+
+    let ast = parse_unknown(&mut iter)?;
+
+    Ok(ast)
+}
+
 pub fn parse_json(json: String) -> Result<Ast, ParseError> {
     let mut iter = Lexer::from_string(&json).peekable();
 
