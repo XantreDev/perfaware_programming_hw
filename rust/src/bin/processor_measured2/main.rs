@@ -6,7 +6,9 @@ use std::{
     process::exit,
 };
 
-use haversine_generator::{PointPair, json_utils, labels::Labels, with_label, with_profiling};
+use haversine_generator::{
+    PointPair, json_utils, labels::Labels, with_label, with_profiling, write::RawAlloc,
+};
 
 fn process_haversine(data: json_utils::JsonData) -> f64 {
     let mut distances_sum = 0.0;
@@ -48,8 +50,6 @@ fn main() {
             let verify_file_path = args.nth(0);
         };
 
-
-
         with_label! {
             Labels::PreIO =>
             let file = File::open(test_data_path)
@@ -59,6 +59,7 @@ fn main() {
 
         with_label! {
             Labels::IO where bytes=meta.size() =>
+            let buf = RawAlloc::new((meta.size() + 1) as usize);
             let json = fs::read_to_string(test_data_path).unwrap();
         };
 

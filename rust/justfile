@@ -44,4 +44,10 @@ prefetching:
     nu ./scripts.nu run-precise listing_148_prefetching
 
 io:
-    nu ./scripts.nu run-precise rep_test_io ./test_parser.json
+    nu ./scripts.nu run-precise rep_test_io ./out.json
+
+generator seed amount:
+    nu ./scripts.nu run generator {{ seed }} {{ amount }}
+
+generate_700mb:
+    @just generator 0 10_000_000

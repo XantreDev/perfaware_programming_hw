@@ -20,24 +20,22 @@ fn is_whitespace(value: char) -> bool {
     value == ' ' || value == '\n' || value == '\r' || value == '\t'
 }
 
+#[cfg(test)]
 #[derive(Debug)]
 pub struct TokenStream {
     pub tokens: Vec<Token>,
 }
 
-fn skip_n<T: Iterator>(value: &mut T, elements: u32) {
-    for _ in 0..elements {
-        value.next();
-    }
-}
-
 pub(crate) struct Lexer<'a> {
-    data: &'a String,
+    data: &'a [u8],
     position: usize,
 }
 
 impl Lexer<'_> {
-    pub(crate) fn new<'a>(value: &'a String) -> Lexer<'a> {
+    pub(crate) fn from_string<'a>(value: &'a String) -> Lexer<'a> {
+        Self::from_slice(value.as_bytes())
+    }
+    pub(crate) fn from_slice<'a>(value: &'a [u8]) -> Lexer<'a> {
         Lexer {
             data: value,
             position: 0,
@@ -55,10 +53,10 @@ impl Iterator for Lexer<'_> {
 
 #[inline(always)]
 fn get_current_char<'a>(lexer: &mut Lexer<'a>) -> Option<char> {
-    lexer
-        .data
-        .get(lexer.position..=lexer.position)
-        .and_then(|it| it.chars().next())
+    if lexer.position >= lexer.data.len() {
+        return None;
+    }
+    Some(lexer.data[lexer.position] as char)
 }
 
 #[inline(always)]
@@ -158,11 +156,9 @@ pub fn lexicize(lexer: &mut Lexer<'_>) -> Option<Result<Token, ParseError>> {
     Some(Ok(token))
 }
 
+#[cfg(test)]
 fn lexicize_complete(data: String) -> Result<TokenStream, ParseError> {
-    let mut lexer = Lexer {
-        data: &data,
-        position: 0,
-    };
+    let mut lexer = Lexer::from_string(&data);
 
     let mut tokens = Vec::new();
 

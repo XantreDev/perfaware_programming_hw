@@ -7,7 +7,7 @@ use self::{
 };
 
 pub fn parse_json(json: String) -> Result<Ast, ParseError> {
-    let mut iter = Lexer::new(&json).peekable();
+    let mut iter = Lexer::from_string(&json).peekable();
 
     let ast = parse_unknown(&mut iter)?;
 

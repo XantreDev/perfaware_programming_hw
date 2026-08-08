@@ -57,4 +57,8 @@ impl RawAlloc {
     pub fn as_u8_slice_mut<'a>(&'a self) -> &'a mut [u8] {
         unsafe { std::slice::from_raw_parts_mut(self.0 as *mut u8, self.1) }
     }
+
+    pub fn as_u64_slice_mut<'a>(&'a self) -> &'a mut [u64] {
+        unsafe { std::slice::from_raw_parts_mut(self.0 as *mut u64, self.1) }
+    }
 }
