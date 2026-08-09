@@ -7,7 +7,8 @@ use std::{
 };
 
 use haversine_generator::{
-    PointPair, json_utils, labels::Labels, with_label, with_profiling, write::RawAlloc,
+    PointPair, core_affinity, json_utils, labels::Labels, with_label, with_profiling,
+    write::RawAlloc,
 };
 
 fn process_haversine(data: json_utils::JsonData) -> f64 {
@@ -39,6 +40,7 @@ fn main() {
         println!("possible args [test_data.json] [answers.fp64]?");
         exit(1);
     }
+    core_affinity::set_single_core().unwrap();
 
     with_profiling! {
         Labels =>
@@ -57,18 +59,27 @@ fn main() {
             let meta = file.metadata().unwrap();
         }
 
+        // for i in (0..arr.len()).step_by(4096) {
+        //     arr[i] = 0;
+        // }
         with_label! {
             Labels::IO where bytes=meta.size() =>
-            // wtf? raw mmap 2x faster
-            let buf = RawAlloc::new((meta.size()) as usize);
-            let json = buf.as_u8_slice_mut();
-            file.read_exact(json).unwrap();
-            // let mut vec: Vec<u8> = Vec::with_capacity(meta.size() as usize);
+
+            // let mut vec: Vec<u8> = Vec::with_capacity(meta.size() as usize + 64);
             // let arr = unsafe {
-            //    vec.spare_capacity_mut().assume_init_mut()
+            //     let alignment = 63;
+            //    &mut vec.spare_capacity_mut().assume_init_mut()[alignment..meta.size() as usize + alignment]
             // };
+            //
+            // println!("ptr={:p}, offset={}", arr.as_ptr(), arr.as_ptr() as usize & 4095);
             // file.read_exact(arr).unwrap();
-            // let json = arr;
+            // wtf? raw mmap 2x faster
+            // let buf = RawAlloc::new((meta.size() + 64) as usize);
+            // let json = &mut buf.as_u8_slice_mut()[16..16 + meta.size() as usize];
+            let buf = RawAlloc::new((meta.size()) as usize);
+            let arr = &mut buf.as_u8_slice_mut();
+            file.read_exact(arr).unwrap();
+            let json = arr;
         };
 
         let json_data = json_utils::prepare_data_from_slice(json);

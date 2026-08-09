@@ -1,4 +1,11 @@
-use std::{fmt::Debug, str::FromStr, usize};
+use std::{
+    error::Error,
+    fmt::{Debug, format},
+    str::FromStr,
+    usize,
+};
+
+use crate::rep_tester::RepTester;
 
 pub struct Point {
     pub x: f64,
@@ -110,4 +117,19 @@ impl IntParsableStr for String {
     {
         self.replace("_", "").parse::<T>().expect(message)
     }
+}
+
+#[derive(Debug)]
+pub struct SetupError {
+    pub message: String,
+}
+
+pub fn setup_rep_test() -> Result<RepTester, SetupError> {
+    core_affinity::set_single_core().map_err(|err| SetupError {
+        message: err.to_string(),
+    })?;
+    let tester = RepTester::new().ok_or_else(|| SetupError {
+        message: format!("Failed to create tester"),
+    })?;
+    return Ok(tester);
 }

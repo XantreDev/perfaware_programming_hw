@@ -139,23 +139,6 @@ fn main() {
             check = { buf[buf.len() - 2] != 0 },
         );
 
-        // meh, a lot of faults
-        // rep_run!(
-        //     rep_tester,
-        //     name = "File::read_exact + malloc (auto)",
-        //     len = meta.len(),
-        //     before = {
-        //         let json = RawAlloc::new(meta.len() as usize);
-
-        //         let mut file = File::open(test_data_path).unwrap();
-        //         let buf = json.as_u8_slice_mut();
-        //     },
-        //     block = {
-        //         file.read_exact(buf).unwrap();
-        //     },
-        //     check = { buf.len() == meta.len() as usize },
-        // );
-
         #[cfg(target_os = "linux")]
         rep_run!(
             rep_tester,

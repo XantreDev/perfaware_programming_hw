@@ -46,6 +46,12 @@ prefetching:
 io:
     nu ./scripts.nu run-precise rep_test_io ./out.json
 
+io_offsets:
+    nu ./scripts.nu run-precise listing_149_io_alignment ./out.json
+
+rep_movsb_offsets:
+    nu ./scripts.nu run-precise listing_150_rep_movsb ./out.json
+
 generator seed amount:
     nu ./scripts.nu run generator {{ seed }} {{ amount }}
 
