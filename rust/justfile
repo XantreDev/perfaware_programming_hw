@@ -55,5 +55,8 @@ rep_movsb_offsets:
 generator seed amount:
     nu ./scripts.nu run generator {{ seed }} {{ amount }}
 
+handmade_arena:
+    nu ./scripts.nu run-precise listing_152_handmade_arena
+
 generate_700mb:
     @just generator 0 10_000_000
