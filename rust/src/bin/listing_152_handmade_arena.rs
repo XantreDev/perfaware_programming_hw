@@ -1,4 +1,4 @@
-use std::ptr::null_mut;
+use std::{ptr::null_mut, u32};
 
 use haversine_generator::{arena::TypedArena, rep_run, setup_rep_test};
 
@@ -12,16 +12,55 @@ struct LinkedListNodeBox {
     next: Option<Box<LinkedListNodeBox>>,
 }
 
+struct LinkedListDataOriented<T> {
+    nodes: Vec<T>,
+    refs: Vec<IndexOrU32>,
+}
+#[repr(transparent)]
+#[derive(Clone, Copy)]
+pub struct IndexOrU32(u32);
+
+impl IndexOrU32 {
+    const NONE: IndexOrU32 = IndexOrU32(u32::MAX);
+
+    pub fn get(&self) -> Option<u32> {
+        if self.0 == Self::NONE.0 {
+            return None;
+        } else {
+            return Some(self.0);
+        }
+    }
+}
+
+struct LinkedListDataOrientedEntry<T> {
+    value: T,
+    next: IndexOrU32,
+}
+impl<T> LinkedListDataOriented<T> {
+    fn with_capacity(capacity: usize) -> Self {
+        LinkedListDataOriented {
+            nodes: Vec::with_capacity(capacity),
+            refs: Vec::with_capacity(capacity),
+        }
+    }
+
+    fn push(&mut self, item: LinkedListDataOrientedEntry<T>) {
+        self.nodes.push(item.value);
+        self.refs.push(item.next);
+    }
+}
+
 fn main() {
     let mut rep_tester = setup_rep_test().unwrap();
 
-    for i in 8..=20 {
+    for i in 10..=20 {
         let count = 2usize.pow(i);
-        let name = format!("arena {}", count);
+        let len = count * size_of::<LinkedListNode>();
+        let name = format!("arena {} ({}kB)", count, len / 1024);
         rep_run!(
             rep_tester,
             name = &name,
-            len = count * size_of::<LinkedListNode>(),
+            len = len,
             before = {
                 let arena = TypedArena::new();
             },
@@ -42,11 +81,12 @@ fn main() {
             },
         );
 
-        let name = format!("glibc {}", count);
+        let len = count * size_of::<LinkedListNodeBox>();
+        let name = format!("glibc {} ({}kB)", count, len / 1024);
         rep_run!(
             rep_tester,
             name = &name,
-            len = count * size_of::<LinkedListNodeBox>(),
+            len = len,
             before = {},
             block = {
                 let mut start = LinkedListNodeBox {
@@ -68,5 +108,28 @@ fn main() {
             },
             // check = { item.value == (count as u64 - 1) * 10 }
         );
+
+        let len = count * (size_of::<u32>() + size_of::<IndexOrU32>()) + 48;
+        let name = format!("data_oriented {} ({}kB)", count, len / 1024);
+        rep_run!(
+            rep_tester,
+            name = &name,
+            len = len,
+            block = {
+                let mut list: LinkedListDataOriented<u32> =
+                    LinkedListDataOriented::with_capacity(count);
+
+                for j in 0..(count as u32) {
+                    list.push(LinkedListDataOrientedEntry {
+                        value: j * 10,
+                        next: IndexOrU32(j + 1),
+                    });
+                }
+
+                if count != 0 {
+                    list.refs[count as usize - 1] = IndexOrU32::NONE;
+                }
+            }
+        )
     }
 }
