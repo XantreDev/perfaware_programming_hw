@@ -1,0 +1,8 @@
+---
+source: src/csv_exporter.rs
+expression: res
+---
+Bytes,A,B,C
+32,1,1,
+64,,1,
+128,,,228
