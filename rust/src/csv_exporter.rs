@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, Copy)]
 pub struct PerfEntry {
-    size: u64,
-    throughput: f64,
+    pub size: u64,
+    pub throughput: f64,
 }
 struct CsvCol {
     name: &'static str,

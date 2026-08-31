@@ -17,6 +17,7 @@ pub type PointPair = (Point, Point);
 pub mod arena;
 pub mod core_affinity;
 pub mod csv_exporter;
+pub mod csv_exporter_utils;
 pub mod json_parser;
 pub mod json_utils;
 pub mod labels;
