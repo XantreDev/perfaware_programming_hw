@@ -58,5 +58,11 @@ generator seed amount:
 handmade_arena:
     nu ./scripts.nu run-precise listing_152_handmade_arena
 
+io_buffer_size:
+    nu ./scripts.nu run-precise listing_151_io_buffer_size ./out.json
+
 generate_700mb:
     @just generator 0 10_000_000
+
+generate_970mb:
+    @just generator 0 13_000_000
