@@ -127,7 +127,7 @@ pub struct SetupError {
     pub message: String,
 }
 
-pub fn setup_rep_test() -> Result<RepTester, SetupError> {
+pub fn setup_rep_test_single_core() -> Result<RepTester, SetupError> {
     core_affinity::set_single_core().map_err(|err| SetupError {
         message: err.to_string(),
     })?;

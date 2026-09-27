@@ -6,7 +6,7 @@ use haversine_generator::{
     csv_exporter::{CsvColRef, CsvData, PerfEntry},
     rep_run,
     rep_tester::MeasurementKind,
-    setup_rep_test,
+    setup_rep_test_single_core,
     write::RawAlloc,
 };
 
@@ -106,7 +106,7 @@ fn main() {
 
         file_path
     };
-    let mut rep_tester = setup_rep_test().unwrap();
+    let mut rep_tester = setup_rep_test_single_core().unwrap();
     let mut csv_data = CsvData::new();
 
     let fault_all_case = add_test_case(
