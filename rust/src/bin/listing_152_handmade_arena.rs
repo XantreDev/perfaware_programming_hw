@@ -6,7 +6,7 @@ use haversine_generator::{
     csv_exporter_utils::CsvImport,
     rep_run,
     rep_tester::MeasurementKind,
-    setup_rep_test,
+    setup_rep_test_single_core,
 };
 
 struct LinkedListNode {
@@ -58,7 +58,7 @@ impl<T> LinkedListDataOriented<T> {
 }
 
 fn main() {
-    let mut rep_tester = setup_rep_test().unwrap();
+    let mut rep_tester = setup_rep_test_single_core().unwrap();
     // let use_csv = {
     //     let env_var = env::var_os("CSV").unwrap_or("0".into());
 

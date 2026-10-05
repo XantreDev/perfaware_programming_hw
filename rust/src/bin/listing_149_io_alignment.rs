@@ -1,9 +1,9 @@
 use std::{env, fs::File, io::Read, path::Path, process::exit};
 
-use haversine_generator::{rep_run, setup_rep_test, write::RawAlloc};
+use haversine_generator::{rep_run, setup_rep_test_single_core, write::RawAlloc};
 
 fn main() {
-    let mut rep_tester = setup_rep_test().unwrap();
+    let mut rep_tester = setup_rep_test_single_core().unwrap();
     let mut args = env::args();
     if args.len() < 2 {
         println!("[inputFilePath] is required");

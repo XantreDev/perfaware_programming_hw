@@ -1,6 +1,6 @@
 use std::{env, fs::File, io::Read, ops::Not, path::Path, process::exit};
 
-use haversine_generator::{rep_run, setup_rep_test, write::RawAlloc};
+use haversine_generator::{rep_run, setup_rep_test_single_core, write::RawAlloc};
 
 unsafe fn rep_movsb(dst: *mut u8, src: *const u8, n: usize) {
     unsafe {
@@ -15,7 +15,7 @@ unsafe fn rep_movsb(dst: *mut u8, src: *const u8, n: usize) {
 }
 
 fn main() {
-    let mut rep_tester = setup_rep_test().unwrap();
+    let mut rep_tester = setup_rep_test_single_core().unwrap();
     let mut args = env::args();
     if args.len() < 2 {
         println!("[inputFilePath] is required");

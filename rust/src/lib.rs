@@ -18,6 +18,7 @@ pub mod arena;
 pub mod core_affinity;
 pub mod csv_exporter;
 pub mod csv_exporter_utils;
+pub mod io_tests;
 pub mod json_parser;
 pub mod json_utils;
 pub mod labels;
@@ -127,7 +128,7 @@ pub struct SetupError {
     pub message: String,
 }
 
-pub fn setup_rep_test() -> Result<RepTester, SetupError> {
+pub fn setup_rep_test_single_core() -> Result<RepTester, SetupError> {
     core_affinity::set_single_core().map_err(|err| SetupError {
         message: err.to_string(),
     })?;

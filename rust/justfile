@@ -61,6 +61,9 @@ handmade_arena:
 io_buffer_size:
     nu ./scripts.nu run-precise listing_151_io_buffer_size ./out.json
 
+io_parallel_size:
+    nu ./scripts.nu run-precise listing_153_parallel_io ./out.json
+
 generate_700mb:
     @just generator 0 10_000_000
 
