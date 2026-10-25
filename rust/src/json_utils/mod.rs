@@ -47,7 +47,7 @@ impl AstIterTools for Ast {
     }
 }
 
-pub fn prepare_data_from_slice(json: &[u8]) -> JsonData {
+pub fn prepare_haversinve_data_from_json(json: &[u8]) -> HaversineJsonData {
     with_label! {
         Labels::JsonParse where bytes=json.len() =>
 
@@ -79,13 +79,9 @@ pub fn prepare_data_from_slice(json: &[u8]) -> JsonData {
     with_label! {Labels::JsonFree =>
         drop(result);
     };
-    JsonData { pairs }
+    HaversineJsonData { pairs }
 }
 
-pub fn prepare_data(json: String) -> JsonData {
-    prepare_data_from_slice(json.as_bytes())
-}
-
-pub struct JsonData {
+pub struct HaversineJsonData {
     pub pairs: Vec<PointPair>,
 }

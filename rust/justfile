@@ -69,3 +69,6 @@ generate_700mb:
 
 generate_970mb:
     @just generator 0 13_000_000
+
+haversine_perf:
+    nu ./scripts.nu run-precise listing_160_haversine_perf ./out

@@ -1,21 +1,15 @@
-use std::{
-    fs::{self, File},
-    io::Read,
-    os::unix::fs::MetadataExt,
-    path::Path,
-    process::exit,
-};
+use std::{fs::File, io::Read, os::unix::fs::MetadataExt, path::Path, process::exit};
 
 use haversine_generator::{
     PointPair, core_affinity, json_utils, labels::Labels, with_label, with_profiling,
     write::RawAlloc,
 };
 
-fn process_haversine(data: json_utils::JsonData) -> f64 {
+fn process_haversine(data: &[PointPair]) -> f64 {
     let mut distances_sum = 0.0;
-    let weight = 1.0 / (data.pairs.len() as f64);
+    let weight = 1.0 / (data.len() as f64);
 
-    for pair in data.pairs {
+    for pair in data {
         let earth_radius = 6372.8;
 
         let distance = haversine_generator::reference_haversine(
@@ -82,13 +76,13 @@ fn main() {
             let json = arr;
         };
 
-        let json_data = json_utils::prepare_data_from_slice(json);
+        let json_data = json_utils::prepare_haversinve_data_from_json(json);
 
         let pairs_amount = json_data.pairs.len();
         with_label! {
             Labels::Haversine where bytes=pairs_amount * size_of::<PointPair>() =>
 
-            let distances_sum = process_haversine(json_data);
+            let distances_sum = process_haversine(&json_data.pairs);
         };
         with_label! {
             Labels::AfterMath =>

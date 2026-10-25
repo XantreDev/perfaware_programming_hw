@@ -1,4 +1,4 @@
-use haversine_generator::json_utils;
+use haversine_generator::{PointPair, json_utils};
 
 use std::{
     fs::{self, File},
@@ -8,11 +8,11 @@ use std::{
     time::Duration,
 };
 
-fn process_haversine(data: json_utils::JsonData) -> f64 {
+fn process_haversine(data: &[PointPair]) -> f64 {
     let mut distances_sum = 0.0;
-    let weight = 1.0 / (data.pairs.len() as f64);
+    let weight = 1.0 / (data.len() as f64);
 
-    for pair in data.pairs {
+    for pair in data {
         let earth_radius = 6372.8;
 
         let distance = haversine_generator::reference_haversine(
@@ -122,11 +122,11 @@ fn main() {
 
     timestamps.after_file_read = time_measurer.clocks_now();
 
-    let json_data = json_utils::prepare_data(json);
+    let json_data = json_utils::prepare_haversinve_data_from_json(json.as_bytes());
 
     timestamps.after_json_parse = time_measurer.clocks_now();
     let pairs_amount = json_data.pairs.len();
-    let distances_sum = process_haversine(json_data);
+    let distances_sum = process_haversine(&json_data.pairs);
     timestamps.after_process = time_measurer.clocks_now();
 
     println!("Pairs amount: {}", pairs_amount);
