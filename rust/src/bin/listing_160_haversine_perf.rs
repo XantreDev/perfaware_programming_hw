@@ -36,18 +36,19 @@ impl ImplementationVariant {
 }
 const EARTH_RADIUS: f64 = 6372.8;
 
+fn reference_process_many(data: &[PointPair]) -> f64 {
+    let mut total = 0.0;
+    let k = 1.0 / data.len() as f64;
+
+    for pair in data {
+        total += k * reference_haversine(pair.0.x, pair.0.y, pair.1.x, pair.1.y, EARTH_RADIUS);
+    }
+
+    total
+}
 const REFERENCE: ImplementationVariant = ImplementationVariant {
     name: "reference",
-    process_many: |data: &[PointPair]| -> f64 {
-        let mut total = 0.0;
-        let k = 1.0 / data.len() as f64;
-
-        for pair in data {
-            total += k * reference_haversine(pair.0.x, pair.0.y, pair.1.x, pair.1.y, EARTH_RADIUS);
-        }
-
-        total
-    },
+    process_many: reference_process_many,
     process: |pair| -> f64 {
         reference_haversine(pair.0.x, pair.0.y, pair.1.x, pair.1.y, EARTH_RADIUS)
     },
