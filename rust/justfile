@@ -72,3 +72,6 @@ generate_970mb:
 
 haversine_perf:
     nu ./scripts.nu run-precise listing_160_haversine_perf ./out
+
+haversine_trig_data_range:
+    nu ./scripts.nu run-precise listing_161_data_ranges ./out
