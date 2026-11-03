@@ -1,4 +1,4 @@
-use std::{env::args, f64, fs::File, io::Read};
+use std::{env::args, f64, fs::File, io::Read, os::unix::fs::FileExt};
 
 use haversine_generator::{
     PointPair, core_affinity, json_utils::prepare_haversinve_data_from_json,
@@ -133,8 +133,21 @@ fn main() {
             .unwrap();
         buf
     };
+    let reference_data = {
+        const F64_SIZE: usize = 8;
+        let mut buf = [0u8; F64_SIZE];
+        let file = File::open(format!("{}.f64", case_basepath)).unwrap();
+        let file_len = file.metadata().unwrap().len();
+        file.read_exact_at(&mut buf, file_len - F64_SIZE as u64)
+            .unwrap();
+
+        assert!(file_len % F64_SIZE as u64 == 0);
+
+        f64::from_ne_bytes(buf)
+    };
     let json_data = prepare_haversinve_data_from_json(&json_buf);
 
-    let (_, calls) = process_many(&json_data.pairs);
+    let (n, calls) = process_many(&json_data.pairs);
+    assert!((n - reference_data).abs() < 1e-6);
     println!("{:?}", calls);
 }
