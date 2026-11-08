@@ -22,6 +22,7 @@ pub mod io_tests;
 pub mod json_parser;
 pub mod json_utils;
 pub mod labels;
+pub mod math;
 pub mod pointer;
 pub mod rep_tester;
 pub mod simple_profiler;
