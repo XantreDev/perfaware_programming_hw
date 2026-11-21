@@ -75,3 +75,6 @@ haversine_perf:
 
 haversine_trig_data_range:
     nu ./scripts.nu run-precise listing_161_data_ranges ./out
+
+trig_comporator:
+    nu ./scripts.nu run listing_162_comparator
