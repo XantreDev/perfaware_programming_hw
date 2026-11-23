@@ -51,8 +51,15 @@ const ASIN_TEST: ComparatorTest = ComparatorTest {
     refs: &math::references::ASIN_POINTS,
     range: Range::new(0.0, 1.0),
 };
+const SQRT_TEST: ComparatorTest = ComparatorTest {
+    name: "sqrt",
+    default: f64::sqrt,
+    other: &[],
+    refs: &math::references::SQRT_POINTS,
+    range: Range::new(0.0, 10_000.0),
+};
 
-const TESTS: ComparatorTests<3> = [SIN_TEST, COS_TEST, ASIN_TEST];
+const TESTS: ComparatorTests<4> = [SIN_TEST, COS_TEST, ASIN_TEST, SQRT_TEST];
 
 fn delta(base: TrigFn, other: TrigFn, value: f64) -> f64 {
     (base(value) - other(value)).abs()
